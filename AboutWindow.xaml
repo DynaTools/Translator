@@ -1,8 +1,9 @@
 ﻿<Window x:Class="Translator.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Sobre" Height="300" Width="400"
-        ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
+        Title="About" Height="300" Width="400"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        Icon="/Resources/translate_icon.ico">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -13,20 +14,20 @@
         <StackPanel Grid.Row="0" HorizontalAlignment="Center">
             <Image Source="/Resources/translate_icon.png" Width="64" Height="64" Margin="0,0,0,10"/>
             <TextBlock Text="Clipboard Translator" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
-            <TextBlock x:Name="VersionText" Text="Versão 1.0.0" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+            <TextBlock x:Name="VersionText" Text="Version 1.0.0" HorizontalAlignment="Center" Margin="0,5,0,0"/>
         </StackPanel>
 
         <TextBlock Grid.Row="1" TextWrapping="Wrap" Margin="0,20,0,0" TextAlignment="Center">
-            Um aplicativo para tradução automática do conteúdo da área de transferência,
-            desenvolvido para aumentar a produtividade em comunicações multilíngues.
+            An application for automatic translation of clipboard content,
+            designed to increase productivity in multilingual communications.
             <LineBreak/><LineBreak/>
-            <Hyperlink Click="Hyperlink_Click">GitHub do Projeto</Hyperlink>
+            <Hyperlink Click="Hyperlink_Click">Project GitHub</Hyperlink>
             <LineBreak/><LineBreak/>
-            Criado com base no conceito original em Python.
+            Developed by Paulo Giavoni with Claude's assistance.
             <LineBreak/><LineBreak/>
-            © 2025 Todos os direitos reservados.
+            © 2025 All rights reserved.
         </TextBlock>
 
-        <Button Grid.Row="2" Content="Fechar" Width="80" HorizontalAlignment="Center" Margin="0,15,0,0" Click="CloseButton_Click"/>
+        <Button Grid.Row="2" Content="Close" Width="80" HorizontalAlignment="Center" Margin="0,15,0,0" Click="CloseButton_Click"/>
     </Grid>
 </Window>

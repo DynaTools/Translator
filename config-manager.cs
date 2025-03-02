@@ -6,12 +6,13 @@ namespace ClipboardTranslator
 {
     public class TranslationSettings
     {
-        public string DefaultSourceLanguage { get; set; } = "Detecção automática";
-        public string DefaultTargetLanguage { get; set; } = "Português";
-        public string DefaultTone { get; set; } = "Neutro";
-        public string GoogleApiKey { get; set; } = "";
+        public string DefaultSourceLanguage { get; set; } = "Auto Detect";
+        public string DefaultTargetLanguage { get; set; } = "English";
+        public string DefaultTone { get; set; } = "Neutral";
+        public string GoogleApiKey { get; set; } = ""; // Keep for backward compatibility
+        public string GeminiApiKey { get; set; } = ""; // New property for Gemini API
         public string OpenAIApiKey { get; set; } = "";
-        public string PreferredService { get; set; } = "Google"; // Google ou OpenAI
+        public string PreferredService { get; set; } = "Gemini"; // Gemini or OpenAI
         public bool StartWithWindows { get; set; } = false;
         public bool StartMinimized { get; set; } = false;
         public bool PlaySoundOnTranslation { get; set; } = true;
@@ -31,31 +32,37 @@ namespace ClipboardTranslator
         {
             try
             {
-                // Criar pasta de configuração se não existir
+                // Create config folder if it doesn't exist
                 if (!Directory.Exists(ConfigFolder))
                 {
                     Directory.CreateDirectory(ConfigFolder);
                 }
 
-                // Verificar se o arquivo de configuração existe
+                // Check if the config file exists
                 if (File.Exists(ConfigFile))
                 {
-                    // Ler e deserializar o arquivo
+                    // Read and deserialize the file
                     string json = File.ReadAllText(ConfigFile);
                     var settings = JsonSerializer.Deserialize<TranslationSettings>(json);
 
-                    // Retornar as configurações lidas
+                    // If it's an older version without GeminiApiKey, migrate the GoogleApiKey
+                    if (settings != null && string.IsNullOrEmpty(settings.GeminiApiKey) && !string.IsNullOrEmpty(settings.GoogleApiKey))
+                    {
+                        settings.GeminiApiKey = settings.GoogleApiKey;
+                    }
+
+                    // Return the read settings
                     return settings ?? new TranslationSettings();
                 }
 
-                // Se o arquivo não existir, criar configurações padrão
+                // If the file doesn't exist, create default settings
                 var defaultSettings = new TranslationSettings();
                 SaveSettings(defaultSettings);
                 return defaultSettings;
             }
             catch (Exception)
             {
-                // Em caso de erro, retornar configurações padrão
+                // In case of error, return default settings
                 return new TranslationSettings();
             }
         }
@@ -64,13 +71,13 @@ namespace ClipboardTranslator
         {
             try
             {
-                // Criar pasta de configuração se não existir
+                // Create config folder if it doesn't exist
                 if (!Directory.Exists(ConfigFolder))
                 {
                     Directory.CreateDirectory(ConfigFolder);
                 }
 
-                // Serializar e salvar configurações
+                // Serialize and save settings
                 var options = new JsonSerializerOptions
                 {
                     WriteIndented = true
@@ -81,19 +88,19 @@ namespace ClipboardTranslator
             }
             catch (Exception)
             {
-                // Silenciosamente falhar (poderia ter um log aqui)
+                // Silently fail (could have a log here)
             }
         }
 
-        // Configurar inicialização com o Windows
+        // Configure startup with Windows
         public static void SetStartWithWindows(bool enable)
         {
             try
             {
-                // Obter caminho do executável
+                // Get executable path
                 string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
 
-                // Obter chave do registro
+                // Get registry key
                 var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
                     @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
 
@@ -101,19 +108,19 @@ namespace ClipboardTranslator
                 {
                     if (enable)
                     {
-                        // Adicionar ao registro
+                        // Add to registry
                         key.SetValue("ClipboardTranslator", exePath);
                     }
                     else
                     {
-                        // Remover do registro
+                        // Remove from registry
                         key.DeleteValue("ClipboardTranslator", false);
                     }
                 }
             }
             catch (Exception)
             {
-                // Silenciosamente falhar (poderia ter um log aqui)
+                // Silently fail (could have a log here)
             }
         }
     }

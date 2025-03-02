@@ -148,28 +148,27 @@ namespace Translator
 
         private void InitializeTranslationService()
         {
-            // Selecionar o serviço com base na configuração
+            // Load settings
+            settings = ConfigManager.LoadSettings();
+
+            // Select service based on configuration
             if (settings.PreferredService == "OpenAI" && !string.IsNullOrEmpty(settings.OpenAIApiKey))
             {
                 translationService = new OpenAITranslationService();
                 translationService.SetApiKey(settings.OpenAIApiKey);
-                StatusBarText.Text = "Usando serviço: OpenAI";
+                StatusBarText.Text = "Using service: OpenAI";
+            }
+            else if (settings.PreferredService == "Gemini" && !string.IsNullOrEmpty(settings.GeminiApiKey))
+            {
+                translationService = new GeminiTranslationService();
+                translationService.SetApiKey(settings.GeminiApiKey);
+                StatusBarText.Text = "Using service: Google Gemini Flash";
             }
             else
             {
-                // Por padrão usamos o Google Translate
-                translationService = new GoogleTranslationService();
-
-                // Definir API key se necessário
-                if (!string.IsNullOrEmpty(settings.GoogleApiKey))
-                {
-                    translationService.SetApiKey(settings.GoogleApiKey);
-                    StatusBarText.Text = "Usando serviço: Google Cloud Translation";
-                }
-                else
-                {
-                    StatusBarText.Text = "Usando serviço: Google Translate (não-oficial)";
-                }
+                // Default fallback to free service
+                translationService = new GeminiTranslationService();
+                StatusBarText.Text = "Using service: Free translation API (limited)";
             }
         }
 
@@ -337,11 +336,11 @@ namespace Translator
                             {
                                 try
                                 {
-                                    System.Media.SystemSounds.Asterisk.Play();
+                                    SoundService.PlayTranslationCompleteSound();
                                 }
                                 catch
                                 {
-                                    // Ignorar erros de som
+                                    // Ignore sound errors
                                 }
                             }
 

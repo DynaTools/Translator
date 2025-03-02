@@ -7,32 +7,33 @@
         mc:Ignorable="d"
         Title="Clipboard Translator" Height="400" Width="600" 
         ResizeMode="CanMinimize"
-        WindowStartupLocation="CenterScreen">
-    
+        WindowStartupLocation="CenterScreen"
+        Icon="/Resources/translate_icon.ico">
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
-        <!-- Menu superior -->
+
+        <!-- Top Menu -->
         <Menu Grid.Row="0">
-            <MenuItem Header="Arquivo">
-                <MenuItem Header="Minimizar para bandeja" Click="MinimizeToTray_Click"/>
+            <MenuItem Header="File">
+                <MenuItem Header="Minimize to Tray" Click="MinimizeToTray_Click"/>
                 <Separator/>
-                <MenuItem Header="Sair" Click="Exit_Click"/>
+                <MenuItem Header="Exit" Click="Exit_Click"/>
             </MenuItem>
-            <MenuItem Header="Configurações">
-                <MenuItem Header="Preferências" Click="Preferences_Click"/>
+            <MenuItem Header="Settings">
+                <MenuItem Header="Preferences" Click="Preferences_Click"/>
                 <MenuItem Header="API Keys" Click="ApiKeys_Click"/>
             </MenuItem>
-            <MenuItem Header="Ajuda">
-                <MenuItem Header="Sobre" Click="About_Click"/>
+            <MenuItem Header="Help">
+                <MenuItem Header="About" Click="About_Click"/>
             </MenuItem>
         </Menu>
-        
-        <!-- Conteúdo principal -->
+
+        <!-- Main Content -->
         <Grid Grid.Row="1" Margin="15">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -41,88 +42,88 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            
+
             <!-- Status -->
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
                 <TextBlock Text="Status:" VerticalAlignment="Center" FontWeight="Bold"/>
-                <TextBlock x:Name="StatusText" Text="Ativo" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Green"/>
-                <ToggleButton x:Name="ToggleStatus" Content="Pausar" Margin="15,0,0,0" Padding="10,3" Click="ToggleStatus_Click"/>
+                <TextBlock x:Name="StatusText" Text="Active" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Green"/>
+                <ToggleButton x:Name="ToggleStatus" Content="Pause" Margin="15,0,0,0" Padding="10,3" Click="ToggleStatus_Click"/>
             </StackPanel>
-            
-            <!-- Seleção de idiomas -->
+
+            <!-- Language Selection -->
             <Grid Grid.Row="1" Margin="0,0,0,15">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
+
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="Idioma de origem:" Margin="0,0,0,5"/>
+                    <TextBlock Text="Source Language:" Margin="0,0,0,5"/>
                     <ComboBox x:Name="SourceLanguage" SelectedIndex="0" SelectionChanged="LanguageChanged">
-                        <ComboBoxItem Content="Detecção automática"/>
-                        <ComboBoxItem Content="Português"/>
-                        <ComboBoxItem Content="Inglês"/>
-                        <ComboBoxItem Content="Italiano"/>
-                        <ComboBoxItem Content="Espanhol"/>
-                        <ComboBoxItem Content="Francês"/>
-                        <ComboBoxItem Content="Alemão"/>
+                        <ComboBoxItem Content="Auto Detect"/>
+                        <ComboBoxItem Content="Portuguese"/>
+                        <ComboBoxItem Content="English"/>
+                        <ComboBoxItem Content="Italian"/>
+                        <ComboBoxItem Content="Spanish"/>
+                        <ComboBoxItem Content="French"/>
+                        <ComboBoxItem Content="German"/>
                     </ComboBox>
                 </StackPanel>
-                
+
                 <Button Grid.Column="1" Content="⇄" Margin="10,25,10,0" Padding="5,0" Click="SwapLanguages_Click"/>
-                
+
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="Idioma de destino:" Margin="0,0,0,5"/>
+                    <TextBlock Text="Target Language:" Margin="0,0,0,5"/>
                     <ComboBox x:Name="TargetLanguage" SelectedIndex="2" SelectionChanged="LanguageChanged">
-                        <ComboBoxItem Content="Português"/>
-                        <ComboBoxItem Content="Inglês"/>
-                        <ComboBoxItem Content="Italiano"/>
-                        <ComboBoxItem Content="Espanhol"/>
-                        <ComboBoxItem Content="Francês"/>
-                        <ComboBoxItem Content="Alemão"/>
+                        <ComboBoxItem Content="Portuguese"/>
+                        <ComboBoxItem Content="English"/>
+                        <ComboBoxItem Content="Italian"/>
+                        <ComboBoxItem Content="Spanish"/>
+                        <ComboBoxItem Content="French"/>
+                        <ComboBoxItem Content="German"/>
                     </ComboBox>
                 </StackPanel>
             </Grid>
-            
-            <!-- Seleção de tom -->
+
+            <!-- Tone Selection -->
             <StackPanel Grid.Row="2" Margin="0,0,0,15">
-                <TextBlock Text="Tom da tradução:" Margin="0,0,0,5"/>
+                <TextBlock Text="Translation Tone:" Margin="0,0,0,5"/>
                 <ComboBox x:Name="TranslationTone" SelectedIndex="0" SelectionChanged="ToneChanged">
-                    <ComboBoxItem Content="Neutro"/>
+                    <ComboBoxItem Content="Neutral"/>
                     <ComboBoxItem Content="Formal"/>
-                    <ComboBoxItem Content="Coloquial"/>
-                    <ComboBoxItem Content="Técnico"/>
-                    <ComboBoxItem Content="Profissional"/>
+                    <ComboBoxItem Content="Casual"/>
+                    <ComboBoxItem Content="Technical"/>
+                    <ComboBoxItem Content="Professional"/>
                 </ComboBox>
             </StackPanel>
-            
-            <!-- Preview da tradução -->
+
+            <!-- Translation Preview -->
             <Border Grid.Row="3" BorderBrush="#DDD" BorderThickness="1" Padding="10" Background="#F9F9F9">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="Preview da última tradução:" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="0" Text="Latest Translation Preview:" FontWeight="Bold" Margin="0,0,0,5"/>
                     <TextBox Grid.Row="1" x:Name="TranslationPreview" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" 
                              VerticalScrollBarVisibility="Auto"/>
                 </Grid>
             </Border>
-            
-            <!-- Estatísticas -->
+
+            <!-- Statistics -->
             <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
-                <TextBlock Text="Traduções hoje:"/>
+                <TextBlock Text="Translations today:"/>
                 <TextBlock x:Name="TranslationCount" Text="0" Margin="5,0,15,0" FontWeight="Bold"/>
-                <TextBlock Text="Último idioma detectado:"/>
+                <TextBlock Text="Last detected language:"/>
                 <TextBlock x:Name="LastDetectedLanguage" Text="-" Margin="5,0,0,0" FontWeight="Bold"/>
             </StackPanel>
         </Grid>
-        
-        <!-- Barra de status -->
+
+        <!-- Status Bar -->
         <StatusBar Grid.Row="2">
             <StatusBarItem>
-                <TextBlock x:Name="StatusBarText" Text="Pronto para traduzir"/>
+                <TextBlock x:Name="StatusBarText" Text="Ready to translate"/>
             </StatusBarItem>
         </StatusBar>
     </Grid>

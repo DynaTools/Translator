@@ -1,6 +1,7 @@
 ﻿using ClipboardTranslator;
-using System;
 using System.Windows;
+using System.Threading.Tasks;
+using System;
 
 namespace Translator
 {
@@ -12,13 +13,14 @@ namespace Translator
         {
             InitializeComponent();
 
-            // Copiar configurações atuais
+            // Copy current settings
             UpdatedSettings = new TranslationSettings
             {
                 DefaultSourceLanguage = currentSettings.DefaultSourceLanguage,
                 DefaultTargetLanguage = currentSettings.DefaultTargetLanguage,
                 DefaultTone = currentSettings.DefaultTone,
                 GoogleApiKey = currentSettings.GoogleApiKey,
+                GeminiApiKey = currentSettings.GeminiApiKey,
                 OpenAIApiKey = currentSettings.OpenAIApiKey,
                 PreferredService = currentSettings.PreferredService,
                 StartWithWindows = currentSettings.StartWithWindows,
@@ -28,90 +30,100 @@ namespace Translator
                 LastTranslationDate = currentSettings.LastTranslationDate
             };
 
-            // Configurar a interface com os valores atuais
-            GoogleApiKeyTextBox.Text = UpdatedSettings.GoogleApiKey;
+            // Configure interface with current values
+            GeminiApiKeyTextBox.Text = UpdatedSettings.GeminiApiKey;
             OpenAIApiKeyTextBox.Text = UpdatedSettings.OpenAIApiKey;
 
-            // Configurar o serviço preferido
+            // Configure preferred service
             if (UpdatedSettings.PreferredService == "OpenAI")
             {
                 OpenAIRadioButton.IsChecked = true;
             }
             else
             {
-                GoogleRadioButton.IsChecked = true;
+                GeminiRadioButton.IsChecked = true;
             }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Atualizar as configurações com base na interface
-            UpdatedSettings.GoogleApiKey = GoogleApiKeyTextBox.Text.Trim();
+            // Update settings based on interface
+            UpdatedSettings.GeminiApiKey = GeminiApiKeyTextBox.Text.Trim();
             UpdatedSettings.OpenAIApiKey = OpenAIApiKeyTextBox.Text.Trim();
 
-            // Determinar o serviço preferido
-            UpdatedSettings.PreferredService = OpenAIRadioButton.IsChecked == true ? "OpenAI" : "Google";
+            // Determine preferred service
+            UpdatedSettings.PreferredService = OpenAIRadioButton.IsChecked == true ? "OpenAI" : "Gemini";
 
-            // Definir resultado e fechar
+            // Set result and close
             DialogResult = true;
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            // Fechar sem salvar
+            // Close without saving
             DialogResult = false;
         }
 
-        private void GoogleHelpLink_Click(object sender, RoutedEventArgs e)
+        private void GeminiHelpLink_Click(object sender, RoutedEventArgs e)
         {
-            // Abrir a página de ajuda no navegador
+            // Open help page in browser
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "https://cloud.google.com/translate/docs/getting-started",
+                FileName = "https://ai.google.dev/tutorials/setup",
                 UseShellExecute = true
             });
         }
 
-        private async void TestGoogleButton_Click(object sender, RoutedEventArgs e)
+        private void OpenAIHelpLink_Click(object sender, RoutedEventArgs e)
         {
-            string apiKey = GoogleApiKeyTextBox.Text.Trim();
+            // Open help page in browser
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://platform.openai.com/api-keys",
+                UseShellExecute = true
+            });
+        }
+
+        private async void TestGeminiButton_Click(object sender, RoutedEventArgs e)
+        {
+            string apiKey = GeminiApiKeyTextBox.Text.Trim();
 
             if (string.IsNullOrEmpty(apiKey))
             {
-                MessageBox.Show("Por favor, insira uma chave de API válida.", "Chave Inválida",
+                MessageBox.Show("Please enter a valid API key.", "Invalid Key",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            TestGoogleButton.IsEnabled = false;
-            TestGoogleButton.Content = "Testando...";
+            TestGeminiButton.IsEnabled = false;
+            TestGeminiButton.Content = "Testing...";
 
             try
             {
-                // Criar uma instância temporária do serviço
-                var testService = new GoogleTranslationService();
+                // Create temporary service instance
+                var testService = new GeminiTranslationService();
                 testService.SetApiKey(apiKey);
 
-                // Testar uma tradução simples
+                // Test a simple translation
                 var result = await testService.TranslateAsync(
-                    "Olá, isso é um teste de conexão.",
-                    "pt",
+                    "Hello, this is a connection test.",
                     "en",
-                    "neutro");
+                    "es",
+                    "neutral");
 
                 if (result.Success)
                 {
                     MessageBox.Show(
-                        $"Conexão bem-sucedida!\nTexto traduzido: {result.TranslatedText}",
-                        "Teste de Conexão",
+                        $"Connection successful!\nTranslated text: {result.TranslatedText}",
+                        "Connection Test",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 }
                 else
                 {
                     MessageBox.Show(
-                        $"Erro ao testar conexão: {result.ErrorMessage}",
-                        "Falha no Teste",
+                        $"Error testing connection: {result.ErrorMessage}",
+                        "Test Failed",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -119,26 +131,16 @@ namespace Translator
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Erro ao testar conexão: {ex.Message}",
-                    "Erro",
+                    $"Error testing connection: {ex.Message}",
+                    "Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
             finally
             {
-                TestGoogleButton.IsEnabled = true;
-                TestGoogleButton.Content = "Testar Conexão";
+                TestGeminiButton.IsEnabled = true;
+                TestGeminiButton.Content = "Test Connection";
             }
-        }
-
-        private void OpenAIHelpLink_Click(object sender, RoutedEventArgs e)
-        {
-            // Abrir a página de ajuda no navegador
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "https://platform.openai.com/api-keys",
-                UseShellExecute = true
-            });
         }
 
         private async void TestOpenAIButton_Click(object sender, RoutedEventArgs e)
@@ -147,40 +149,40 @@ namespace Translator
 
             if (string.IsNullOrEmpty(apiKey))
             {
-                MessageBox.Show("Por favor, insira uma chave de API válida.", "Chave Inválida",
+                MessageBox.Show("Please enter a valid API key.", "Invalid Key",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             TestOpenAIButton.IsEnabled = false;
-            TestOpenAIButton.Content = "Testando...";
+            TestOpenAIButton.Content = "Testing...";
 
             try
             {
-                // Criar uma instância temporária do serviço
+                // Create temporary service instance
                 var testService = new OpenAITranslationService();
                 testService.SetApiKey(apiKey);
 
-                // Testar uma tradução simples
+                // Test a simple translation
                 var result = await testService.TranslateAsync(
-                    "Olá, isso é um teste de conexão.",
-                    "pt",
+                    "Hello, this is a connection test.",
                     "en",
-                    "neutro");
+                    "fr",
+                    "neutral");
 
                 if (result.Success)
                 {
                     MessageBox.Show(
-                        $"Conexão bem-sucedida!\nTexto traduzido: {result.TranslatedText}",
-                        "Teste de Conexão",
+                        $"Connection successful!\nTranslated text: {result.TranslatedText}",
+                        "Connection Test",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 }
                 else
                 {
                     MessageBox.Show(
-                        $"Erro ao testar conexão: {result.ErrorMessage}",
-                        "Falha no Teste",
+                        $"Error testing connection: {result.ErrorMessage}",
+                        "Test Failed",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -188,15 +190,15 @@ namespace Translator
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Erro ao testar conexão: {ex.Message}",
-                    "Erro",
+                    $"Error testing connection: {ex.Message}",
+                    "Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
             finally
             {
                 TestOpenAIButton.IsEnabled = true;
-                TestOpenAIButton.Content = "Testar Conexão";
+                TestOpenAIButton.Content = "Test Connection";
             }
         }
     }

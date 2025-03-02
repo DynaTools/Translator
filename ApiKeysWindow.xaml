@@ -1,8 +1,9 @@
 ﻿<Window x:Class="Translator.ApiKeysWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Configuração de API Keys" Height="450" Width="450"
-        ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
+        Title="API Keys Configuration" Height="450" Width="450"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        Icon="/Resources/translate_icon.ico">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -10,54 +11,54 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Configuração de Chaves de API" 
+        <TextBlock Grid.Row="0" Text="API Keys Configuration" 
                    FontSize="16" FontWeight="Bold" Margin="15,15,15,5"/>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="15,0,15,0">
             <StackPanel>
-                <GroupBox Header="Serviço de Tradução Preferido" Padding="10" Margin="0,0,0,10">
+                <GroupBox Header="Preferred Translation Service" Padding="10" Margin="0,0,0,10">
                     <StackPanel>
-                        <RadioButton x:Name="GoogleRadioButton" Content="Google Translate API" Margin="0,5" IsChecked="True" GroupName="TranslationService"/>
+                        <RadioButton x:Name="GeminiRadioButton" Content="Google Gemini Flash API" Margin="0,5" IsChecked="True" GroupName="TranslationService"/>
                         <RadioButton x:Name="OpenAIRadioButton" Content="OpenAI API" Margin="0,5" GroupName="TranslationService"/>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="Google Cloud Translation API" Padding="10" Margin="0,0,0,10">
+                <GroupBox Header="Google Gemini Flash API" Padding="10" Margin="0,0,0,10">
                     <StackPanel>
                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,10">
-                            Insira sua chave de API do Google Cloud para usar o serviço oficial de tradução.
+                            Enter your Google Gemini Flash API key to use the Google AI services for translation.
                             <LineBreak/>
                             <LineBreak/>
-                            Se não inserir uma chave, uma API não-oficial será usada, com limitações.
+                            If you don't enter a key, a non-official translation service will be used, with limitations.
                             <LineBreak/>
-                            <Hyperlink Click="GoogleHelpLink_Click">Como obter uma chave?</Hyperlink>
+                            <Hyperlink Click="GeminiHelpLink_Click">How to get a key?</Hyperlink>
                         </TextBlock>
 
-                        <Label Content="Chave de API do Google:" Margin="0,5,0,0"/>
-                        <TextBox x:Name="GoogleApiKeyTextBox" Margin="0,5,0,5" Padding="5,3"/>
-                        <Button x:Name="TestGoogleButton" Content="Testar Conexão" HorizontalAlignment="Left" Margin="0,5,0,0" Padding="8,3" Click="TestGoogleButton_Click"/>
+                        <Label Content="Gemini API Key:" Margin="0,5,0,0"/>
+                        <TextBox x:Name="GeminiApiKeyTextBox" Margin="0,5,0,5" Padding="5,3"/>
+                        <Button x:Name="TestGeminiButton" Content="Test Connection" HorizontalAlignment="Left" Margin="0,5,0,0" Padding="8,3" Click="TestGeminiButton_Click"/>
                     </StackPanel>
                 </GroupBox>
 
                 <GroupBox Header="OpenAI API" Padding="10" Margin="0,0,0,10">
                     <StackPanel>
                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,10">
-                            Insira sua chave de API da OpenAI para usar os modelos GPT para tradução.
+                            Enter your OpenAI API key to use GPT models for translation.
                             <LineBreak/>
-                            <Hyperlink Click="OpenAIHelpLink_Click">Como obter uma chave?</Hyperlink>
+                            <Hyperlink Click="OpenAIHelpLink_Click">How to get a key?</Hyperlink>
                         </TextBlock>
 
-                        <Label Content="Chave de API da OpenAI:" Margin="0,5,0,0"/>
+                        <Label Content="OpenAI API Key:" Margin="0,5,0,0"/>
                         <TextBox x:Name="OpenAIApiKeyTextBox" Margin="0,5,0,5" Padding="5,3"/>
-                        <Button x:Name="TestOpenAIButton" Content="Testar Conexão" HorizontalAlignment="Left" Margin="0,5,0,0" Padding="8,3" Click="TestOpenAIButton_Click"/>
+                        <Button x:Name="TestOpenAIButton" Content="Test Connection" HorizontalAlignment="Left" Margin="0,5,0,0" Padding="8,3" Click="TestOpenAIButton_Click"/>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
         </ScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="15,10,15,15">
-            <Button Content="Cancelar" Width="80" Margin="0,0,10,0" Click="CancelButton_Click"/>
-            <Button Content="Salvar" Width="80" Click="SaveButton_Click"/>
+            <Button Content="Cancel" Width="80" Margin="0,0,10,0" Click="CancelButton_Click"/>
+            <Button Content="Save" Width="80" Click="SaveButton_Click"/>
         </StackPanel>
     </Grid>
 </Window>
