@@ -1,4 +1,4 @@
-﻿<Window x:Class="ClipboardTranslator.PreferencesWindow"
+﻿<Window x:Class="Translator.PreferencesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Preferências" Height="300" Width="400"

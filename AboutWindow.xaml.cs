@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Windows;
 
-namespace ClipboardTranslator
+namespace Translator
 {
     public partial class AboutWindow : Window
     {

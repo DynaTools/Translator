@@ -1,6 +1,7 @@
-﻿using System.Windows;
+﻿using ClipboardTranslator;
+using System.Windows;
 
-namespace ClipboardTranslator
+namespace Translator
 {
     public partial class ApiKeysWindow : Window
     {

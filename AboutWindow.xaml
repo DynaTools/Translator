@@ -1,4 +1,4 @@
-﻿<Window x:Class="ClipboardTranslator.AboutWindow"
+﻿<Window x:Class="Translator.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Sobre" Height="300" Width="400"

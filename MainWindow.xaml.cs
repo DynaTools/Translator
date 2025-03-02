@@ -337,7 +337,7 @@ namespace Translator
                 settings.DefaultSourceLanguage = ((ComboBoxItem)SourceLanguage.SelectedItem).Content.ToString();
             }
 
-            if (TargetLanguage.SelectedItem != null)
+            if (TargetLanguage != null && TargetLanguage.SelectedItem != null)
             {
                 settings.DefaultTargetLanguage = ((ComboBoxItem)TargetLanguage.SelectedItem).Content.ToString();
             }
