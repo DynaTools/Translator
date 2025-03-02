@@ -18,10 +18,10 @@ namespace Translator
                 {
                     isPlaying = true;
 
-                    // Use system sound directly instead of trying to access a Location property
+                    // Use system sound directly
                     SystemSounds.Asterisk.Play();
 
-                    // Reset the flag after a short delay via System.Threading.Timer
+                    // Reset the flag after a delay
                     System.Threading.Timer timer = null;
                     timer = new System.Threading.Timer((state) =>
                     {

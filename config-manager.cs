@@ -15,9 +15,11 @@ namespace ClipboardTranslator
         public string PreferredService { get; set; } = "Gemini"; // Gemini or OpenAI
         public bool StartWithWindows { get; set; } = false;
         public bool StartMinimized { get; set; } = false;
-        public bool PlaySoundOnTranslation { get; set; } = true;
+        public bool PlaySoundOnTranslation { get; set; } = false; // Alterado para false
         public int TranslationsToday { get; set; } = 0;
         public DateTime LastTranslationDate { get; set; } = DateTime.MinValue;
+        public int MaxTokensLimit { get; set; } = 1000; // Valor padrão
+        public bool EnableTokenLimit { get; set; } = true; // Habilitado por padrão
     }
 
     public static class ConfigManager

@@ -8,6 +8,25 @@ using System.Web;
 
 namespace Translator
 {
+    namespace Translator
+    {
+        public static class TokenEstimator
+        {
+            public static int EstimateTokenCount(string text)
+            {
+                if (string.IsNullOrEmpty(text)) return 0;
+
+                // Estimativa aproximada: palavras divididas por espaços
+                char[] delimiters = new char[] { ' ', '\n', '\t', '\r' };
+                string[] words = text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+
+                // Estimativa baseada em palavras + alguns tokens extras para símbolos
+                return (int)(words.Length * 1.3);
+            }
+        }
+    }
+
+
     // Class to store translation results
     public class TranslationResult
     {
@@ -26,10 +45,27 @@ namespace Translator
     }
 
     // Interface for translation services
+    // Interface para serviços de tradução
     public interface ITranslationService
     {
         Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone);
         void SetApiKey(string apiKey);
+    }
+
+    // Classe auxiliar separada para estimativa de tokens
+    public static class TextTokenizer
+    {
+        public static int EstimateTokenCount(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return 0;
+
+            // Estimativa aproximada: palavras divididas por espaços
+            char[] delimiters = new char[] { ' ', '\n', '\t', '\r' };
+            string[] words = text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+
+            // Estimativa baseada em palavras + alguns tokens extras para símbolos
+            return (int)(words.Length * 1.3);
+        }
     }
 
     // Implementation of Google Gemini Flash API service for translation
@@ -129,7 +165,15 @@ namespace Translator
                 }
                 else
                 {
-                    result.ErrorMessage = $"Gemini API Error: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}";
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+                        response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        result.ErrorMessage = "Chave de API inválida ou não autorizada. Verifique se você está usando a chave correta do Gemini.";
+                    }
+                    else
+                    {
+                        result.ErrorMessage = $"Erro na API Gemini: {response.StatusCode} - Verifique sua conexão ou contate o suporte.";
+                    }
                 }
             }
             catch (Exception ex)
@@ -382,8 +426,18 @@ namespace Translator
                 }
                 else
                 {
-                    string errorResponse = await response.Content.ReadAsStringAsync();
-                    result.ErrorMessage = $"OpenAI API Error: {response.StatusCode} - {errorResponse}";
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        result.ErrorMessage = "Chave de API inválida. Verifique se você está usando a chave correta da OpenAI.";
+                    }
+                    else if ((int)response.StatusCode == 429) // 429 é o código para Too Many Requests
+                    {
+                        result.ErrorMessage = "Limite de requisições da OpenAI excedido. Aguarde alguns minutos e tente novamente.";
+                    }
+                    else
+                    {
+                        result.ErrorMessage = $"Erro na API OpenAI: {response.StatusCode} - Verifique sua conexão ou contate o suporte.";
+                    }
                 }
             }
             catch (Exception ex)

@@ -269,6 +269,28 @@ namespace Translator
                             return;
                         }
 
+                        // Verificar limite de tokens (movido para depois de obter o texto)
+                        if (settings.EnableTokenLimit)
+                        {
+                            // Use o método estimador de tokens da classe auxiliar
+                            int estimatedTokens = TextTokenizer.EstimateTokenCount(clipboardText);
+                            if (estimatedTokens > settings.MaxTokensLimit)
+                            {
+                                string message = $"O texto copiado excede o limite de tokens configurado ({settings.MaxTokensLimit}).\n" +
+                                                 $"Tokens estimados: {estimatedTokens}.\n\n" +
+                                                 "Deseja continuar com a tradução?";
+
+                                var dialogResult = System.Windows.MessageBox.Show(message, "Aviso de Limite de Tokens",
+                                   System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
+
+                                if (dialogResult == System.Windows.MessageBoxResult.No)
+                                {
+                                    StatusBarText.Text = "Tradução cancelada pelo usuário (limite de tokens)";
+                                    return;
+                                }
+                            }
+                        }
+
                         // Obter parâmetros de tradução
                         string sourceLanguage = "auto";
                         if (SourceLanguage.SelectedItem != null)

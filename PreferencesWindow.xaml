@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Translator.PreferencesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Preferences" Height="300" Width="400"
+        Title="Preferences" Height="350" Width="400"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
         Icon="/Resources/translate_icon.ico">
     <Grid Margin="15">
@@ -20,6 +20,16 @@
                     <CheckBox x:Name="StartWithWindowsCheckBox" Content="Start with Windows" Margin="0,5"/>
                     <CheckBox x:Name="StartMinimizedCheckBox" Content="Start minimized in tray" Margin="0,5"/>
                     <CheckBox x:Name="PlaySoundCheckBox" Content="Play sound when translation completes" Margin="0,5"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="Limite de Tokens" Margin="0,0,0,15" Padding="10">
+                <StackPanel>
+                    <CheckBox x:Name="EnableTokenLimitCheckBox" Content="Limitar tokens para tradução" Margin="0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Text="Limite máximo de tokens:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBox x:Name="MaxTokensTextBox" Width="80" PreviewTextInput="NumberValidationTextBox"/>
+                    </StackPanel>
                 </StackPanel>
             </GroupBox>
 

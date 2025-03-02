@@ -1,5 +1,6 @@
 ﻿using ClipboardTranslator;
 using System.Windows;
+using System.Windows.Input;
 
 namespace Translator
 {
@@ -18,17 +19,24 @@ namespace Translator
                 DefaultTargetLanguage = currentSettings.DefaultTargetLanguage,
                 DefaultTone = currentSettings.DefaultTone,
                 GoogleApiKey = currentSettings.GoogleApiKey,
+                GeminiApiKey = currentSettings.GeminiApiKey,
+                OpenAIApiKey = currentSettings.OpenAIApiKey,
+                PreferredService = currentSettings.PreferredService,
                 StartWithWindows = currentSettings.StartWithWindows,
                 StartMinimized = currentSettings.StartMinimized,
                 PlaySoundOnTranslation = currentSettings.PlaySoundOnTranslation,
                 TranslationsToday = currentSettings.TranslationsToday,
-                LastTranslationDate = currentSettings.LastTranslationDate
+                LastTranslationDate = currentSettings.LastTranslationDate,
+                MaxTokensLimit = currentSettings.MaxTokensLimit,
+                EnableTokenLimit = currentSettings.EnableTokenLimit
             };
 
             // Configurar a interface com os valores atuais
             StartWithWindowsCheckBox.IsChecked = UpdatedSettings.StartWithWindows;
             StartMinimizedCheckBox.IsChecked = UpdatedSettings.StartMinimized;
             PlaySoundCheckBox.IsChecked = UpdatedSettings.PlaySoundOnTranslation;
+            EnableTokenLimitCheckBox.IsChecked = UpdatedSettings.EnableTokenLimit;
+            MaxTokensTextBox.Text = UpdatedSettings.MaxTokensLimit.ToString();
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -36,7 +44,13 @@ namespace Translator
             // Atualizar as configurações com base na interface
             UpdatedSettings.StartWithWindows = StartWithWindowsCheckBox.IsChecked ?? false;
             UpdatedSettings.StartMinimized = StartMinimizedCheckBox.IsChecked ?? false;
-            UpdatedSettings.PlaySoundOnTranslation = PlaySoundCheckBox.IsChecked ?? true;
+            UpdatedSettings.PlaySoundOnTranslation = PlaySoundCheckBox.IsChecked ?? false;
+            UpdatedSettings.EnableTokenLimit = EnableTokenLimitCheckBox.IsChecked ?? true;
+
+            if (int.TryParse(MaxTokensTextBox.Text, out int maxTokens) && maxTokens > 0)
+            {
+                UpdatedSettings.MaxTokensLimit = maxTokens;
+            }
 
             // Configurar inicialização com o Windows
             ConfigManager.SetStartWithWindows(UpdatedSettings.StartWithWindows);
@@ -59,6 +73,11 @@ namespace Translator
 
             MessageBox.Show("Estatísticas reiniciadas com sucesso!", "Estatísticas",
                 MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = !int.TryParse(e.Text, out _);
         }
     }
 }
