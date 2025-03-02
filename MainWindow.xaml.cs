@@ -137,12 +137,19 @@ namespace Translator
         private void InitializeLanguageCodes()
         {
             languageCodes.Clear();
+            languageCodes.Add("Auto Detect", "auto");
             languageCodes.Add("Detecção automática", "auto");
+            languageCodes.Add("Portuguese", "pt");
             languageCodes.Add("Português", "pt");
+            languageCodes.Add("English", "en");
             languageCodes.Add("Inglês", "en");
+            languageCodes.Add("Italian", "it");
             languageCodes.Add("Italiano", "it");
+            languageCodes.Add("Spanish", "es");
             languageCodes.Add("Espanhol", "es");
+            languageCodes.Add("French", "fr");
             languageCodes.Add("Francês", "fr");
+            languageCodes.Add("German", "de");
             languageCodes.Add("Alemão", "de");
         }
 
