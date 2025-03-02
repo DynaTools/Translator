@@ -1,0 +1,40 @@
+﻿<Window x:Class="ClipboardTranslator.PreferencesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Preferências" Height="300" Width="400"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Preferências do ClipboardTranslator" 
+                   FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+        <StackPanel Grid.Row="1">
+            <GroupBox Header="Comportamento" Margin="0,0,0,15" Padding="10">
+                <StackPanel>
+                    <CheckBox x:Name="StartWithWindowsCheckBox" Content="Iniciar com o Windows" Margin="0,5"/>
+                    <CheckBox x:Name="StartMinimizedCheckBox" Content="Iniciar minimizado na bandeja" Margin="0,5"/>
+                    <CheckBox x:Name="PlaySoundCheckBox" Content="Tocar som ao completar tradução" Margin="0,5"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="Estatísticas" Padding="10">
+                <StackPanel>
+                    <TextBlock>
+                        <Run Text="Restaurar contadores"/>
+                        <Hyperlink Click="ResetStats_Click">Reiniciar estatísticas</Hyperlink>
+                    </TextBlock>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Cancelar" Width="80" Margin="0,0,10,0" Click="CancelButton_Click"/>
+            <Button Content="Salvar" Width="80" Click="SaveButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

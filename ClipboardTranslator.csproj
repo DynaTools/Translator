@@ -1,0 +1,58 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ApplicationIcon>Resources\translate_icon.ico</ApplicationIcon>
+		<Authors>Seu Nome</Authors>
+		<Company>Seu Nome</Company>
+		<Description>Aplicativo para tradução automática do conteúdo da área de transferência</Description>
+		<Version>1.0.0</Version>
+		<RootNamespace>Translator</RootNamespace>
+		<AssemblyName>Translator</AssemblyName>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Remove="Resources\translate_icon.ico" />
+		<None Remove="Resources\translate_icon.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="Resources\translate_icon.ico">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Resource Include="Resources\translate_icon.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+		<PackageReference Include="System.Memory" Version="4.5.5" />
+		<PackageReference Include="System.Text.Json" Version="6.0.7" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="System.Web" />
+	</ItemGroup>
+
+	<!-- Adicione esta seção para configurar corretamente os arquivos XAML -->
+	<ItemGroup>
+		<Page Include="MainWindow.xaml" />
+		<Page Include="AboutWindow.xaml" />
+		<Page Include="ApiKeysWindow.xaml" />
+		<Page Include="PreferencesWindow.xaml" />
+		<Page Include="App.xaml" />
+		<Compile Update="MainWindow.xaml.cs" DependentUpon="MainWindow.xaml" />
+		<Compile Update="AboutWindow.xaml.cs" DependentUpon="AboutWindow.xaml" />
+		<Compile Update="ApiKeysWindow.xaml.cs" DependentUpon="ApiKeysWindow.xaml" />
+		<Compile Update="PreferencesWindow.xaml.cs" DependentUpon="PreferencesWindow.xaml" />
+		<Compile Update="App.xaml.cs" DependentUpon="App.xaml" />
+	</ItemGroup>
+
+</Project>
