@@ -124,13 +124,25 @@ namespace Translator
 
         private void InitializeTranslationService()
         {
-            // Por padrão usamos o Google Translate, mas podemos trocar facilmente o serviço
-            translationService = new GoogleTranslationService();
+            // Carregar as configurações
+            settings = ConfigManager.LoadSettings();
 
-            // Verificar e definir API key se necessário
-            if (!string.IsNullOrEmpty(settings.GoogleApiKey))
+            // Selecionar o serviço com base na configuração
+            if (settings.PreferredService == "OpenAI" && !string.IsNullOrEmpty(settings.OpenAIApiKey))
             {
-                translationService.SetApiKey(settings.GoogleApiKey);
+                translationService = new OpenAITranslationService();
+                translationService.SetApiKey(settings.OpenAIApiKey);
+            }
+            else
+            {
+                // Por padrão usamos o Google Translate
+                translationService = new GoogleTranslationService();
+
+                // Definir API key se necessário
+                if (!string.IsNullOrEmpty(settings.GoogleApiKey))
+                {
+                    translationService.SetApiKey(settings.GoogleApiKey);
+                }
             }
         }
 
@@ -379,11 +391,8 @@ namespace Translator
                 settings = apiKeysWindow.UpdatedSettings;
                 ConfigManager.SaveSettings(settings);
 
-                // Atualizar serviço de tradução com a nova chave
-                if (!string.IsNullOrEmpty(settings.GoogleApiKey))
-                {
-                    translationService.SetApiKey(settings.GoogleApiKey);
-                }
+                // Reinicializar o serviço de tradução com base nas novas configurações
+                InitializeTranslationService();
             }
         }
 

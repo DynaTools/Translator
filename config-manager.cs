@@ -10,21 +10,23 @@ namespace ClipboardTranslator
         public string DefaultTargetLanguage { get; set; } = "Português";
         public string DefaultTone { get; set; } = "Neutro";
         public string GoogleApiKey { get; set; } = "";
+        public string OpenAIApiKey { get; set; } = "";
+        public string PreferredService { get; set; } = "Google"; // Google ou OpenAI
         public bool StartWithWindows { get; set; } = false;
         public bool StartMinimized { get; set; } = false;
         public bool PlaySoundOnTranslation { get; set; } = true;
         public int TranslationsToday { get; set; } = 0;
         public DateTime LastTranslationDate { get; set; } = DateTime.MinValue;
     }
-    
+
     public static class ConfigManager
     {
         private static readonly string ConfigFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "ClipboardTranslator");
-            
+
         private static readonly string ConfigFile = Path.Combine(ConfigFolder, "settings.json");
-        
+
         public static TranslationSettings LoadSettings()
         {
             try
@@ -34,18 +36,18 @@ namespace ClipboardTranslator
                 {
                     Directory.CreateDirectory(ConfigFolder);
                 }
-                
+
                 // Verificar se o arquivo de configuração existe
                 if (File.Exists(ConfigFile))
                 {
                     // Ler e deserializar o arquivo
                     string json = File.ReadAllText(ConfigFile);
                     var settings = JsonSerializer.Deserialize<TranslationSettings>(json);
-                    
+
                     // Retornar as configurações lidas
                     return settings ?? new TranslationSettings();
                 }
-                
+
                 // Se o arquivo não existir, criar configurações padrão
                 var defaultSettings = new TranslationSettings();
                 SaveSettings(defaultSettings);
@@ -57,7 +59,7 @@ namespace ClipboardTranslator
                 return new TranslationSettings();
             }
         }
-        
+
         public static void SaveSettings(TranslationSettings settings)
         {
             try
@@ -67,13 +69,13 @@ namespace ClipboardTranslator
                 {
                     Directory.CreateDirectory(ConfigFolder);
                 }
-                
+
                 // Serializar e salvar configurações
                 var options = new JsonSerializerOptions
                 {
                     WriteIndented = true
                 };
-                
+
                 string json = JsonSerializer.Serialize(settings, options);
                 File.WriteAllText(ConfigFile, json);
             }
@@ -82,7 +84,7 @@ namespace ClipboardTranslator
                 // Silenciosamente falhar (poderia ter um log aqui)
             }
         }
-        
+
         // Configurar inicialização com o Windows
         public static void SetStartWithWindows(bool enable)
         {
@@ -90,11 +92,11 @@ namespace ClipboardTranslator
             {
                 // Obter caminho do executável
                 string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                
+
                 // Obter chave do registro
                 var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
                     @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                
+
                 if (key != null)
                 {
                     if (enable)
