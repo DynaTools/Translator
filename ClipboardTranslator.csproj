@@ -10,7 +10,7 @@
 		<Company>Seu Nome</Company>
 		<Description>Aplicativo para tradução automática do conteúdo da área de transferência</Description>
 		<Version>1.0.0</Version>
-		<RootNamespace>Translator</RootNamespace>
+		<RootNamespace>ClipboardTranslator</RootNamespace>
 		<AssemblyName>Translator</AssemblyName>
 	</PropertyGroup>
 

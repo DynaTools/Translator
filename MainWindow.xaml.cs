@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms; // Referência ao System.Windows.Forms
-using System.Drawing; // Referência ao System.Drawing
+using System.Windows.Forms; // Reference to System.Windows.Forms
+using System.Drawing; // Reference to System.Drawing
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
@@ -11,6 +11,7 @@ using System.Text;
 using ClipboardTranslator;
 using System.Threading;
 using System.Linq;
+using WpfComboBox = System.Windows.Controls.ComboBox;
 
 namespace Translator
 {
@@ -19,8 +20,8 @@ namespace Translator
         private NotifyIcon trayIcon;
         private bool isActive = true;
 
-        // Dicionário para mapear texto original e idioma destino para evitar repetições
-        private Dictionary<string, Dictionary<string, string>> translationCache = new Dictionary<string, Dictionary<string, string>>();
+        // Dictionary to map original text and target language to avoid repetitions
+        private Dictionary<string, string> translationCache = new Dictionary<string, string>();
 
         private Dictionary<string, string> languageCodes = new Dictionary<string, string>();
         private ClipboardMonitor clipboardMonitor;
@@ -29,13 +30,13 @@ namespace Translator
         private DateTime lastTranslationDate = DateTime.MinValue;
         private TranslationSettings settings = new TranslationSettings();
 
-        // Semáforo para evitar traduções simultâneas
+        // Semaphore to prevent simultaneous translations
         private SemaphoreSlim translationSemaphore = new SemaphoreSlim(1, 1);
 
-        // Armazenar o último texto copiado para debug
+        // Store the last copied text for debug
         private string lastCopiedText = string.Empty;
 
-        // Controle de última tradução
+        // Control of last translation
         private string lastSourceLanguage = string.Empty;
         private string lastTargetLanguage = string.Empty;
 
@@ -44,14 +45,15 @@ namespace Translator
             InitializeComponent();
             InitializeTrayIcon();
             InitializeLanguageCodes();
+            SetupLanguageCombos();
             LoadSettings();
             InitializeTranslationService();
 
-            // Iniciar o monitoramento da área de transferência
+            // Start clipboard monitoring
             clipboardMonitor = new ClipboardMonitor(this);
             clipboardMonitor.ClipboardChanged += OnClipboardChanged;
 
-            // Configurar eventos para quando a janela for carregada e fechada
+            // Configure events for when the window is loaded and closed
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
         }
@@ -62,27 +64,27 @@ namespace Translator
             clipboardMonitor.Initialize(hwnd);
             UpdateTranslationCounter();
 
-            // Se deve iniciar minimizado
+            // If should start minimized
             if (settings.StartMinimized)
             {
                 this.Hide();
                 trayIcon.Visible = true;
             }
 
-            // Atualizar a interface com as configurações
-            StatusBarText.Text = "Pronto para traduzir";
+            // Update interface with settings
+            StatusBarText.Text = "Ready to translate";
         }
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            // Remover o ícone da bandeja do sistema
+            // Remove tray icon
             if (trayIcon != null)
             {
                 trayIcon.Visible = false;
                 trayIcon.Dispose();
             }
 
-            // Desativar o monitoramento de área de transferência
+            // Disable clipboard monitoring
             clipboardMonitor.Dispose();
         }
 
@@ -97,16 +99,16 @@ namespace Translator
 
             trayIcon.Click += TrayIcon_Click;
 
-            // Criar menu para o ícone da bandeja
+            // Create menu for tray icon
             ContextMenuStrip contextMenu = new ContextMenuStrip();
 
-            ToolStripMenuItem openItem = new ToolStripMenuItem("Abrir");
+            ToolStripMenuItem openItem = new ToolStripMenuItem("Open");
             openItem.Click += (s, e) => ShowMainWindow();
 
-            ToolStripMenuItem toggleItem = new ToolStripMenuItem("Pausar/Retomar");
+            ToolStripMenuItem toggleItem = new ToolStripMenuItem("Pause/Resume");
             toggleItem.Click += (s, e) => ToggleTranslationStatus();
 
-            ToolStripMenuItem exitItem = new ToolStripMenuItem("Sair");
+            ToolStripMenuItem exitItem = new ToolStripMenuItem("Exit");
             exitItem.Click += (s, e) => System.Windows.Application.Current.Shutdown();
 
             contextMenu.Items.Add(openItem);
@@ -119,8 +121,8 @@ namespace Translator
 
         private void TrayIcon_Click(object sender, EventArgs e)
         {
-            // Se o clique for com o botão esquerdo, mostra a janela
-            // Qualificar completamente o MouseEventArgs para evitar ambiguidade
+            // If the click is with the left button, show the window
+            // Fully qualify MouseEventArgs to avoid ambiguity
             if (e is System.Windows.Forms.MouseEventArgs mouseEvent && mouseEvent.Button == System.Windows.Forms.MouseButtons.Left)
             {
                 ShowMainWindow();
@@ -153,6 +155,30 @@ namespace Translator
             languageCodes.Add("Alemão", "de");
         }
 
+        private void SetupLanguageCombos()
+        {
+            // Clear existing items
+            SourceLanguage.Items.Clear();
+            TargetLanguage.Items.Clear();
+
+            // Source languages (with Auto Detect)
+            SourceLanguage.Items.Add(new ComboBoxItem { Content = "Auto Detect", Tag = "auto" });
+            SourceLanguage.Items.Add(new ComboBoxItem { Content = "Portuguese", Tag = "pt" });
+            SourceLanguage.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
+            SourceLanguage.Items.Add(new ComboBoxItem { Content = "Italian", Tag = "it" });
+            SourceLanguage.Items.Add(new ComboBoxItem { Content = "Spanish", Tag = "es" });
+            SourceLanguage.Items.Add(new ComboBoxItem { Content = "French", Tag = "fr" });
+            SourceLanguage.Items.Add(new ComboBoxItem { Content = "German", Tag = "de" });
+
+            // Target languages (without Auto Detect)
+            TargetLanguage.Items.Add(new ComboBoxItem { Content = "Portuguese", Tag = "pt" });
+            TargetLanguage.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
+            TargetLanguage.Items.Add(new ComboBoxItem { Content = "Italian", Tag = "it" });
+            TargetLanguage.Items.Add(new ComboBoxItem { Content = "Spanish", Tag = "es" });
+            TargetLanguage.Items.Add(new ComboBoxItem { Content = "French", Tag = "fr" });
+            TargetLanguage.Items.Add(new ComboBoxItem { Content = "German", Tag = "de" });
+        }
+
         private void InitializeTranslationService()
         {
             // Load settings
@@ -183,7 +209,7 @@ namespace Translator
         {
             settings = ConfigManager.LoadSettings();
 
-            // Definir valores padrão com base nas configurações
+            // Apply saved source language
             if (!string.IsNullOrEmpty(settings.DefaultSourceLanguage))
             {
                 foreach (ComboBoxItem item in SourceLanguage.Items)
@@ -196,6 +222,7 @@ namespace Translator
                 }
             }
 
+            // Apply saved target language
             if (!string.IsNullOrEmpty(settings.DefaultTargetLanguage))
             {
                 foreach (ComboBoxItem item in TargetLanguage.Items)
@@ -208,6 +235,7 @@ namespace Translator
                 }
             }
 
+            // Apply saved tone
             if (!string.IsNullOrEmpty(settings.DefaultTone))
             {
                 foreach (ComboBoxItem item in TranslationTone.Items)
@@ -220,7 +248,7 @@ namespace Translator
                 }
             }
 
-            // Verificar estatísticas salvas
+            // Check saved statistics
             if (settings.LastTranslationDate.Date == DateTime.Today)
             {
                 translationsToday = settings.TranslationsToday;
@@ -235,6 +263,19 @@ namespace Translator
             UpdateTranslationCounter();
         }
 
+        private void DebugLog(string message)
+        {
+            if (StatusBarText != null)
+            {
+                StatusBarText.Text = message;
+            }
+            else
+            {
+                // Handle the case where StatusBarText is null
+                System.Diagnostics.Debug.WriteLine("StatusBarText is null.");
+            }
+        }
+
         private void UpdateTranslationCounter()
         {
             TranslationCount.Text = translationsToday.ToString();
@@ -246,75 +287,87 @@ namespace Translator
 
             try
             {
-                // Tentar obter o semáforo de tradução com um timeout curto
-                // Se não conseguir, outra tradução está em andamento
+                // Try to obtain the translation semaphore with a short timeout
+                // If can't obtain it, another translation is in progress
                 if (!await translationSemaphore.WaitAsync(100))
                 {
-                    StatusBarText.Text = "Tradução já em andamento, aguarde...";
+                    StatusBarText.Text = "Translation already in progress, please wait...";
                     return;
                 }
 
                 try
                 {
-                    // Verificar se há texto no clipboard
+                    // Check if there is text in the clipboard
                     if (System.Windows.Clipboard.ContainsText())
                     {
                         string clipboardText = System.Windows.Clipboard.GetText().Trim();
                         lastCopiedText = clipboardText;
 
-                        // Ignorar se o texto for muito curto
+                        // Ignore if the text is too short
                         if (string.IsNullOrWhiteSpace(clipboardText) || clipboardText.Length < 2)
                         {
-                            StatusBarText.Text = "Texto muito curto para tradução";
+                            DebugLog("Text too short for translation");
                             return;
                         }
 
-                        // Verificar limite de tokens (movido para depois de obter o texto)
+                        // Check token limit (moved after getting the text)
                         if (settings.EnableTokenLimit)
                         {
-                            // Use o método estimador de tokens da classe auxiliar
+                            // Use the token estimator method from the helper class
                             int estimatedTokens = TextTokenizer.EstimateTokenCount(clipboardText);
                             if (estimatedTokens > settings.MaxTokensLimit)
                             {
-                                string message = $"O texto copiado excede o limite de tokens configurado ({settings.MaxTokensLimit}).\n" +
-                                                 $"Tokens estimados: {estimatedTokens}.\n\n" +
-                                                 "Deseja continuar com a tradução?";
+                                string message = $"The copied text exceeds the configured token limit ({settings.MaxTokensLimit}).\n" +
+                                                 $"Estimated tokens: {estimatedTokens}.\n\n" +
+                                                 "Do you want to continue with the translation?";
 
-                                var dialogResult = System.Windows.MessageBox.Show(message, "Aviso de Limite de Tokens",
+                                var dialogResult = System.Windows.MessageBox.Show(message, "Token Limit Warning",
                                    System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
 
                                 if (dialogResult == System.Windows.MessageBoxResult.No)
                                 {
-                                    StatusBarText.Text = "Tradução cancelada pelo usuário (limite de tokens)";
+                                    DebugLog("Translation canceled by user (token limit)");
                                     return;
                                 }
                             }
                         }
 
-                        // Obter parâmetros de tradução
+                        // Get source language code directly from Tag
                         string sourceLanguage = "auto";
                         if (SourceLanguage.SelectedItem != null)
                         {
-                            var sourceLang = ((ComboBoxItem)SourceLanguage.SelectedItem).Content.ToString();
-                            sourceLanguage = languageCodes.ContainsKey(sourceLang) ? languageCodes[sourceLang] : "auto";
+                            var selectedItem = (ComboBoxItem)SourceLanguage.SelectedItem;
+                            sourceLanguage = selectedItem.Tag as string ?? "auto";
+                            DebugLog($"Source language: {selectedItem.Content} (code: {sourceLanguage})");
                         }
 
+                        // Get target language code directly from Tag
                         string targetLanguage = "en";
                         if (TargetLanguage.SelectedItem != null)
                         {
-                            var targetLang = ((ComboBoxItem)TargetLanguage.SelectedItem).Content.ToString();
-                            targetLanguage = languageCodes.ContainsKey(targetLang) ? languageCodes[targetLang] : "en";
+                            var selectedItem = (ComboBoxItem)TargetLanguage.SelectedItem;
+                            targetLanguage = selectedItem.Tag as string ?? "en";
+                            DebugLog($"Target language: {selectedItem.Content} (code: {targetLanguage})");
                         }
 
-                        // Verificar cache se o mesmo texto já foi traduzido para o mesmo idioma alvo
-                        if (translationCache.ContainsKey(clipboardText) &&
-                            translationCache[clipboardText].ContainsKey(targetLanguage))
+                        // Skip translation if source and target are the same (and source isn't auto)
+                        if (sourceLanguage != "auto" && sourceLanguage == targetLanguage)
                         {
-                            // Usar tradução em cache
-                            string cachedTranslation = translationCache[clipboardText][targetLanguage];
+                            DebugLog("Source and target languages are the same - skipping translation");
+                            return;
+                        }
+
+                        // Create a more specific cache key that includes both languages
+                        string cacheKey = $"{clipboardText}|{sourceLanguage}|{targetLanguage}";
+
+                        // Check if this exact translation is already in cache
+                        if (translationCache.ContainsKey(cacheKey))
+                        {
+                            // Use cached translation
+                            string cachedTranslation = translationCache[cacheKey];
                             System.Windows.Clipboard.SetText(cachedTranslation);
                             TranslationPreview.Text = cachedTranslation;
-                            StatusBarText.Text = "Texto recuperado do cache";
+                            DebugLog("Translation retrieved from cache");
                             return;
                         }
 
@@ -324,43 +377,39 @@ namespace Translator
                             tone = ((ComboBoxItem)TranslationTone.SelectedItem).Content.ToString().ToLower();
                         }
 
-                        // Atualizar last translation info
+                        // Update last translation info
                         lastSourceLanguage = sourceLanguage;
                         lastTargetLanguage = targetLanguage;
 
-                        // Atualizar status
-                        StatusBarText.Text = "Traduzindo...";
+                        // Update status
+                        DebugLog("Translating...");
 
-                        // Realizar a tradução
+                        // Perform the translation
                         TranslationResult result = await translationService.TranslateAsync(clipboardText, sourceLanguage, targetLanguage, tone);
 
-                        // Processar resultado
+                        // Process result
                         if (result.Success)
                         {
-                            // Armazenar em cache
-                            if (!translationCache.ContainsKey(clipboardText))
-                            {
-                                translationCache[clipboardText] = new Dictionary<string, string>();
-                            }
-                            translationCache[clipboardText][targetLanguage] = result.TranslatedText;
+                            // Store successful translation in cache with the specific key
+                            translationCache[cacheKey] = result.TranslatedText;
 
-                            // Manter o cache com tamanho razoável
+                            // Keep cache size reasonable
                             if (translationCache.Count > 50)
                             {
-                                // Remover o item mais antigo
-                                var oldest = translationCache.Keys.First();
-                                translationCache.Remove(oldest);
+                                // Remove oldest entry
+                                var oldestKey = translationCache.Keys.First();
+                                translationCache.Remove(oldestKey);
                             }
 
-                            // Colocar texto traduzido na área de transferência
+                            // Put translated text in clipboard
                             System.Windows.Clipboard.SetText(result.TranslatedText);
 
-                            // Atualizar interface
+                            // Update interface
                             TranslationPreview.Text = result.TranslatedText;
                             LastDetectedLanguage.Text = result.DetectedLanguage;
-                            StatusBarText.Text = "Tradução concluída";
+                            DebugLog("Translation completed");
 
-                            // Verificar se deve tocar som
+                            // Check if should play sound
                             if (settings.PlaySoundOnTranslation)
                             {
                                 try
@@ -373,7 +422,7 @@ namespace Translator
                                 }
                             }
 
-                            // Atualizar estatísticas
+                            // Update statistics
                             translationsToday++;
                             settings.TranslationsToday = translationsToday;
                             settings.LastTranslationDate = DateTime.Today;
@@ -382,27 +431,27 @@ namespace Translator
                         }
                         else
                         {
-                            StatusBarText.Text = "Erro: " + result.ErrorMessage;
+                            DebugLog("Error: " + result.ErrorMessage);
                         }
                     }
                 }
                 finally
                 {
-                    // Liberar o semáforo em qualquer caso
+                    // Release the semaphore in any case
                     translationSemaphore.Release();
                 }
             }
             catch (Exception ex)
             {
-                StatusBarText.Text = "Erro: " + ex.Message;
+                DebugLog("Error: " + ex.Message);
                 try
                 {
-                    // Garantir que o semáforo é liberado em caso de erro
+                    // Ensure the semaphore is released in case of error
                     translationSemaphore.Release();
                 }
                 catch
                 {
-                    // Ignorar erros no semáforo
+                    // Ignore semaphore errors
                 }
             }
         }
@@ -418,59 +467,100 @@ namespace Translator
 
             if (isActive)
             {
-                StatusText.Text = "Ativo";
+                StatusText.Text = "Active";
                 StatusText.Foreground = System.Windows.Media.Brushes.Green;
-                ToggleStatus.Content = "Pausar";
-                StatusBarText.Text = "Monitorando área de transferência";
+                ToggleStatus.Content = "Pause";
+                DebugLog("Monitoring clipboard");
 
-                // Limpar o cache ao reativar
+                // Clear the cache when reactivating
                 translationCache.Clear();
             }
             else
             {
-                StatusText.Text = "Pausado";
+                StatusText.Text = "Paused";
                 StatusText.Foreground = System.Windows.Media.Brushes.Red;
-                ToggleStatus.Content = "Retomar";
-                StatusBarText.Text = "Monitoramento pausado";
+                ToggleStatus.Content = "Resume";
+                DebugLog("Monitoring paused");
             }
         }
 
         private void SwapLanguages_Click(object sender, RoutedEventArgs e)
         {
-            // Não permitir troca se a origem for "Detecção automática"
+            // Don't allow swap if source is "Auto Detect"
             if (SourceLanguage.SelectedIndex == 0) return;
 
-            int sourceIndex = SourceLanguage.SelectedIndex;
-            int targetIndex = TargetLanguage.SelectedIndex;
+            // Get currently selected items
+            ComboBoxItem sourceItem = (ComboBoxItem)SourceLanguage.SelectedItem;
+            ComboBoxItem targetItem = (ComboBoxItem)TargetLanguage.SelectedItem;
 
-            // Ajustar índice para compensar a opção "Detecção automática"
-            int adjustedSourceIndex = sourceIndex - 1;
+            // Find matching items in opposite lists
+            ComboBoxItem newSourceItem = null;
+            ComboBoxItem newTargetItem = null;
 
-            TargetLanguage.SelectedIndex = adjustedSourceIndex;
-            SourceLanguage.SelectedIndex = targetIndex + 1; // +1 porque a lista de origem tem a opção "auto"
+            // Find target language in source list
+            foreach (ComboBoxItem item in SourceLanguage.Items)
+            {
+                if (item.Tag?.ToString() == targetItem.Tag?.ToString())
+                {
+                    newSourceItem = item;
+                    break;
+                }
+            }
 
-            // Limpar cache ao trocar idiomas
-            translationCache.Clear();
+            // Find source language in target list
+            foreach (ComboBoxItem item in TargetLanguage.Items)
+            {
+                if (item.Tag?.ToString() == sourceItem.Tag?.ToString())
+                {
+                    newTargetItem = item;
+                    break;
+                }
+            }
+
+            // Apply the swap
+            if (newSourceItem != null && newTargetItem != null)
+            {
+                SourceLanguage.SelectedItem = newSourceItem;
+                TargetLanguage.SelectedItem = newTargetItem;
+
+                // Clear cache when swapping languages
+                translationCache.Clear();
+                DebugLog("Languages swapped and cache cleared");
+            }
         }
 
         private void LanguageChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Limpar cache ao mudar idiomas
+            // Clear cache when languages change
             translationCache.Clear();
 
-            // Salvar configurações quando idiomas forem alterados
+            // Debug info about language selection
+            if (sender is WpfComboBox comboBox)
+            {
+                if (comboBox.SelectedItem is ComboBoxItem selectedItem)
+                {
+                    string languageType = comboBox.Name == "SourceLanguage" ? "Source" : "Target";
+                    string languageName = selectedItem.Content.ToString();
+                    string languageCode = selectedItem.Tag?.ToString() ?? "unknown";
+
+                    DebugLog($"{languageType} language changed to: {languageName} (code: {languageCode})");
+                }
+            }
+
+            // Save language settings
             SaveLanguageSettings();
         }
 
         private void ToneChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Limpar cache ao mudar tom
+            // Clear cache when tone changes
             translationCache.Clear();
 
             if (settings != null && TranslationTone.SelectedItem != null)
             {
                 settings.DefaultTone = ((ComboBoxItem)TranslationTone.SelectedItem).Content.ToString();
                 ConfigManager.SaveSettings(settings);
+                DebugLog($"Translation tone changed to: {settings.DefaultTone}");
             }
         }
 
@@ -478,17 +568,20 @@ namespace Translator
         {
             if (settings == null) return;
 
-            if (SourceLanguage.SelectedItem != null)
+            // Save source language display name
+            if (SourceLanguage?.SelectedItem != null)
             {
                 settings.DefaultSourceLanguage = ((ComboBoxItem)SourceLanguage.SelectedItem).Content.ToString();
             }
 
-            if (TargetLanguage != null && TargetLanguage.SelectedItem != null)
+            // Save target language display name
+            if (TargetLanguage?.SelectedItem != null)
             {
                 settings.DefaultTargetLanguage = ((ComboBoxItem)TargetLanguage.SelectedItem).Content.ToString();
             }
 
             ConfigManager.SaveSettings(settings);
+            DebugLog("Language settings saved");
         }
 
         private void MinimizeToTray_Click(object sender, RoutedEventArgs e)
@@ -525,10 +618,10 @@ namespace Translator
                 settings = apiKeysWindow.UpdatedSettings;
                 ConfigManager.SaveSettings(settings);
 
-                // Reinicializar o serviço de tradução com as novas configurações
+                // Reinitialize the translation service with new settings
                 InitializeTranslationService();
 
-                // Limpar cache ao mudar serviço
+                // Clear cache when changing service
                 translationCache.Clear();
             }
         }
