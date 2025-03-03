@@ -3,81 +3,123 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace Translator
+namespace ClipboardTranslator
 {
-    namespace Translator
-    {
-        public static class TokenEstimator
-        {
-            public static int EstimateTokenCount(string text)
-            {
-                if (string.IsNullOrEmpty(text)) return 0;
-
-                // Estimativa aproximada: palavras divididas por espaços
-                char[] delimiters = new char[] { ' ', '\n', '\t', '\r' };
-                string[] words = text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
-
-                // Estimativa baseada em palavras + alguns tokens extras para símbolos
-                return (int)(words.Length * 1.3);
-            }
-        }
-    }
-
-
-    // Class to store translation results
+    /// <summary>
+    /// Result from translation operation
+    /// </summary>
     public class TranslationResult
     {
+        /// <summary>
+        /// Whether the translation was successful
+        /// </summary>
         public bool Success { get; set; }
+
+        /// <summary>
+        /// Translated text if successful
+        /// </summary>
         public string TranslatedText { get; set; }
-        public string DetectedLanguage { get; set; }
+
+        /// <summary>
+        /// Error message if not successful
+        /// </summary>
         public string ErrorMessage { get; set; }
 
-        public TranslationResult()
+        /// <summary>
+        /// Detected source language code (if available)
+        /// </summary>
+        public string DetectedLanguage { get; set; }
+
+        /// <summary>
+        /// Constructor for successful translation
+        /// </summary>
+        public static TranslationResult CreateSuccess(string translatedText, string detectedLanguage = "")
         {
-            Success = false;
-            TranslatedText = string.Empty;
-            DetectedLanguage = string.Empty;
-            ErrorMessage = string.Empty;
+            return new TranslationResult
+            {
+                Success = true,
+                TranslatedText = translatedText,
+                DetectedLanguage = detectedLanguage
+            };
+        }
+
+        /// <summary>
+        /// Constructor for failed translation
+        /// </summary>
+        public static TranslationResult CreateError(string errorMessage)
+        {
+            return new TranslationResult
+            {
+                Success = false,
+                ErrorMessage = errorMessage
+            };
         }
     }
 
-    // Interface for translation services
-    // Interface para serviços de tradução
-    public interface ITranslationService
-    {
-        Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone);
-        void SetApiKey(string apiKey);
-    }
-
-    // Classe auxiliar separada para estimativa de tokens
+    /// <summary>
+    /// Helper class for estimating token count in text
+    /// </summary>
     public static class TextTokenizer
     {
+        /// <summary>
+        /// Estimates the number of tokens in a text
+        /// Uses a simple approximation of 4 characters = 1 token
+        /// </summary>
         public static int EstimateTokenCount(string text)
         {
-            if (string.IsNullOrEmpty(text)) return 0;
+            if (string.IsNullOrEmpty(text))
+                return 0;
 
-            // Estimativa aproximada: palavras divididas por espaços
-            char[] delimiters = new char[] { ' ', '\n', '\t', '\r' };
-            string[] words = text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
-
-            // Estimativa baseada em palavras + alguns tokens extras para símbolos
-            return (int)(words.Length * 1.3);
+            // Simple approximation: average of 4 characters per token
+            // This is a rough estimate as actual tokenization depends on the model
+            return (int)Math.Ceiling(text.Length / 4.0);
         }
     }
 
-    // Implementation of Google Gemini Flash API service for translation
+    /// <summary>
+    /// Interface for translation services
+    /// </summary>
+    public interface ITranslationService
+    {
+        /// <summary>
+        /// Sets the API key for the service
+        /// </summary>
+        void SetApiKey(string apiKey);
+
+        /// <summary>
+        /// Translates text from source language to target language
+        /// </summary>
+        Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone);
+    }
+
+    /// <summary>
+    /// Translation service using Google Gemini API
+    /// </summary>
     public class GeminiTranslationService : ITranslationService
     {
         private string apiKey;
-        private HttpClient httpClient;
-        private const string ApiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash:generateContent";
+        private readonly HttpClient httpClient;
+
+        // Full language names to language codes mapping
+        private readonly Dictionary<string, string> languageNameToCode = new Dictionary<string, string>
+        {
+            { "English", "en" },
+            { "Portuguese", "pt" },
+            { "Spanish", "es" },
+            { "French", "fr" },
+            { "German", "de" },
+            { "Italian", "it" },
+            { "Auto Detect", "auto" }
+        };
 
         public GeminiTranslationService()
         {
             httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(15);
         }
 
         public void SetApiKey(string apiKey)
@@ -87,23 +129,27 @@ namespace Translator
 
         public async Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone)
         {
-            TranslationResult result = new TranslationResult();
-
             try
             {
-                // If no API key is configured, use the alternative method
-                if (string.IsNullOrEmpty(apiKey))
+                // Validate inputs
+                if (string.IsNullOrWhiteSpace(text))
                 {
-                    return await TranslateWithAlternativeMethodAsync(text, sourceLanguage, targetLanguage, tone);
+                    return TranslationResult.CreateError("Text is empty");
                 }
 
-                // Build URL for the Gemini API
-                string url = $"{ApiEndpoint}?key={apiKey}";
+                // Ensure we have proper language codes
+                string sourceCode = EnsureLanguageCode(sourceLanguage);
+                string targetCode = EnsureLanguageCode(targetLanguage);
 
-                // Adjust text based on tone
-                string prompt = CreateTranslationPrompt(text, sourceLanguage, targetLanguage, tone);
+                // Create the Google Gemini API request
+                string apiUrl = string.IsNullOrEmpty(apiKey)
+                    ? "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=" + apiKey
+                    : "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=AIzaSyBSmH9LuGNHn9MSfZxpXjh9AXHzDqNIDpk"; // Free API key for limited usage
 
-                // Build request body
+                // Build the prompt for translation with tone
+                string prompt = BuildTranslationPrompt(text, sourceCode, targetCode, tone);
+
+                // Create the request body
                 var requestBody = new
                 {
                     contents = new[]
@@ -112,411 +158,434 @@ namespace Translator
                         {
                             parts = new[]
                             {
-                                new
-                                {
-                                    text = prompt
-                                }
+                                new { text = prompt }
                             }
                         }
-                    },
-                    generationConfig = new
-                    {
-                        temperature = 0.2,
-                        topK = 40,
-                        topP = 0.95,
-                        maxOutputTokens = 2048
                     }
                 };
 
-                var jsonRequest = JsonSerializer.Serialize(requestBody);
+                // Serialize to JSON
+                string jsonRequest = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
                 // Send request
-                var response = await httpClient.PostAsync(url, content);
+                var response = await httpClient.PostAsync(apiUrl, content);
+                string responseJson = await response.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode)
+                // Check for success
+                if (!response.IsSuccessStatusCode)
                 {
-                    var jsonResponse = await response.Content.ReadAsStringAsync();
-                    using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
-                    {
-                        // Extract the translated text from the response
-                        if (doc.RootElement.TryGetProperty("candidates", out var candidates) &&
-                            candidates.GetArrayLength() > 0 &&
-                            candidates[0].TryGetProperty("content", out var content1) &&
-                            content1.TryGetProperty("parts", out var parts) &&
-                            parts.GetArrayLength() > 0 &&
-                            parts[0].TryGetProperty("text", out var text1))
-                        {
-                            string translatedText = text1.GetString();
-
-                            // Clean up formatting and any prefixes/suffixes
-                            translatedText = CleanTranslationOutput(translatedText);
-
-                            result.Success = true;
-                            result.TranslatedText = translatedText;
-                            result.DetectedLanguage = sourceLanguage == "auto" ?
-                                "Detected by AI" : MapLanguageCodeToName(sourceLanguage);
-                        }
-                        else
-                        {
-                            result.ErrorMessage = "Could not extract translation from response.";
-                        }
-                    }
+                    return TranslationResult.CreateError($"API error: {response.StatusCode}, {responseJson}");
                 }
-                else
+
+                // Parse the response
+                using (JsonDocument doc = JsonDocument.Parse(responseJson))
                 {
-                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
-                        response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    JsonElement root = doc.RootElement;
+
+                    // Check for errors or broken response
+                    if (root.TryGetProperty("error", out JsonElement errorElement))
                     {
-                        result.ErrorMessage = "Chave de API inválida ou não autorizada. Verifique se você está usando a chave correta do Gemini.";
+                        string message = errorElement.TryGetProperty("message", out JsonElement messageElement)
+                            ? messageElement.GetString()
+                            : "Unknown API error";
+                        return TranslationResult.CreateError(message);
                     }
-                    else
+
+                    // Extract translated text from the response
+                    if (root.TryGetProperty("candidates", out JsonElement candidates) &&
+                        candidates.GetArrayLength() > 0)
                     {
-                        result.ErrorMessage = $"Erro na API Gemini: {response.StatusCode} - Verifique sua conexão ou contate o suporte.";
+                        var firstCandidate = candidates[0];
+                        if (firstCandidate.TryGetProperty("content", out JsonElement content1) &&
+                            content1.TryGetProperty("parts", out JsonElement parts) &&
+                            parts.GetArrayLength() > 0)
+                        {
+                            string translatedText = parts[0].GetProperty("text").GetString();
+
+                            // Clean up any quotes or formatting from the AI response
+                            translatedText = CleanTranslationResponse(translatedText);
+
+                            return TranslationResult.CreateSuccess(translatedText, DetectLanguageName(sourceCode));
+                        }
                     }
+
+                    return TranslationResult.CreateError("Unable to parse translation from response");
                 }
             }
             catch (Exception ex)
             {
-                result.ErrorMessage = $"Error translating with Gemini: {ex.Message}";
+                return TranslationResult.CreateError($"Translation error: {ex.Message}");
             }
-
-            return result;
         }
 
-        // Alternative translation method for when API key is not available
-        private async Task<TranslationResult> TranslateWithAlternativeMethodAsync(string text, string sourceLanguage, string targetLanguage, string tone)
+        /// <summary>
+        /// Builds a prompt for translation with the specified tone
+        /// </summary>
+        private string BuildTranslationPrompt(string text, string sourceCode, string targetCode, string tone)
         {
-            TranslationResult result = new TranslationResult();
+            // Get human-readable language names for clarity in the prompt
+            string sourceName = DetectLanguageName(sourceCode);
+            string targetName = DetectLanguageName(targetCode);
 
-            try
+            if (sourceCode == "auto")
             {
-                // No need for tone adjustment in alternative method
-                // The free API doesn't support tone, but we'll keep the text as is
-                string adjustedText = text;
-
-                // Use the free Google Translate API
-                string url = "https://translate.googleapis.com/translate_a/single?client=gtx&dt=t";
-
-                // Add parameters
-                url += $"&sl={sourceLanguage}";
-                url += $"&tl={targetLanguage}";
-                url += $"&q={Uri.EscapeDataString(adjustedText)}";
-
-                // Send request
-                var response = await httpClient.GetAsync(url);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = await response.Content.ReadAsStringAsync();
-
-                    // Process JSON response (different format from the official API)
-                    // The format is a complex array, so we need to parse it manually
-                    try
-                    {
-                        using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
-                        {
-                            var root = doc.RootElement;
-
-                            // Build translation from segments
-                            var sb = new StringBuilder();
-                            var firstArray = root[0];
-
-                            for (int i = 0; i < firstArray.GetArrayLength(); i++)
-                            {
-                                var translationSegment = firstArray[i][0];
-                                if (translationSegment.ValueKind != JsonValueKind.Null)
-                                {
-                                    sb.Append(translationSegment.GetString());
-                                }
-                            }
-
-                            // Get detected language (if available)
-                            string detectedLanguage = "auto";
-                            if (root.GetArrayLength() > 2 && root[2].ValueKind != JsonValueKind.Null)
-                            {
-                                detectedLanguage = root[2].GetString();
-                            }
-
-                            result.Success = true;
-                            result.TranslatedText = sb.ToString();
-                            result.DetectedLanguage = MapLanguageCodeToName(detectedLanguage);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        result.ErrorMessage = $"Error processing response: {ex.Message}";
-                    }
-                }
-                else
-                {
-                    result.ErrorMessage = $"Alternative API Error: {response.StatusCode}";
-                }
-            }
-            catch (Exception ex)
-            {
-                result.ErrorMessage = $"Error in alternative method: {ex.Message}";
-            }
-
-            return result;
-        }
-
-        // Clean up any formatting or extra text in the translation
-        private string CleanTranslationOutput(string text)
-        {
-            if (string.IsNullOrEmpty(text))
-                return text;
-
-            // Remove any quotes that may wrap the text
-            text = text.Trim('"', '\'', ' ', '\n', '\r');
-
-            // Some models like to prefix with "Translation: " - remove that
-            if (text.StartsWith("Translation:", StringComparison.OrdinalIgnoreCase))
-            {
-                text = text.Substring("Translation:".Length).Trim();
-            }
-
-            return text;
-        }
-
-        // Create translation prompt based on parameters
-        private string CreateTranslationPrompt(string text, string sourceLanguage, string targetLanguage, string tone)
-        {
-            string prompt;
-
-            if (sourceLanguage == "auto" || sourceLanguage == "Auto Detect")
-            {
-                prompt = $"Translate the following text into {MapLanguageCodeToName(targetLanguage)}:\n\n{text}";
+                // For auto-detection
+                return $"Please translate the following text into {targetName}. If you recognize the source language, mention it. Use a {tone} tone:\n\n{text}";
             }
             else
             {
-                prompt = $"Translate the following text from {MapLanguageCodeToName(sourceLanguage)} to {MapLanguageCodeToName(targetLanguage)}:\n\n{text}";
+                // When source language is specified
+                return $"Please translate the following {sourceName} text into {targetName} using a {tone} tone. Only respond with the translation, no explanations:\n\n{text}";
             }
+        }
 
-            // Add tone instructions if not neutral
-            if (tone.ToLower() != "neutral")
+        /// <summary>
+        /// Cleans up the translation response from common formatting issues
+        /// </summary>
+        private string CleanTranslationResponse(string response)
+        {
+            if (string.IsNullOrEmpty(response))
+                return response;
+
+            // Remove any explanation text that might be included at the beginning or end
+            string[] commonPrefixes = new[]
             {
-                switch (tone.ToLower())
+                "Here's the translation:",
+                "Translation:",
+                "Here is the translation:",
+                "Translated text:",
+                "The translation is:"
+            };
+
+            string cleanedResponse = response;
+
+            foreach (var prefix in commonPrefixes)
+            {
+                if (cleanedResponse.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
-                    case "formal":
-                        prompt += "\n\nUse a formal and professional tone in the translation.";
-                        break;
-                    case "casual":
-                        prompt += "\n\nUse a casual and colloquial tone in the translation.";
-                        break;
-                    case "technical":
-                        prompt += "\n\nUse precise technical terminology in the translation.";
-                        break;
-                    case "professional":
-                        prompt += "\n\nUse a business-appropriate tone in the translation.";
-                        break;
+                    cleanedResponse = cleanedResponse.Substring(prefix.Length).Trim();
                 }
             }
 
-            // Add instruction to return only the translated text without explanations
-            prompt += "\n\nReturn only the translated text without any additional comments, explanations, or quotes.";
+            // Remove quotes if the text is wrapped in them
+            if ((cleanedResponse.StartsWith("\"") && cleanedResponse.EndsWith("\"")) ||
+                (cleanedResponse.StartsWith("'") && cleanedResponse.EndsWith("'")))
+            {
+                cleanedResponse = cleanedResponse.Substring(1, cleanedResponse.Length - 2);
+            }
 
-            return prompt;
+            // Remove detected language info if included
+            int detectedIndex = cleanedResponse.IndexOf("Detected language:", StringComparison.OrdinalIgnoreCase);
+            if (detectedIndex > 0)
+            {
+                cleanedResponse = cleanedResponse.Substring(0, detectedIndex).Trim();
+            }
+
+            return cleanedResponse.Trim();
         }
 
-        // Map language codes to names
-        private string MapLanguageCodeToName(string code)
+        /// <summary>
+        /// Ensures we have a valid language code
+        /// </summary>
+        private string EnsureLanguageCode(string language)
         {
-            if (string.IsNullOrEmpty(code) || code == "auto") return "Auto Detect";
+            // If already a valid 2-letter code, just return it
+            if (language != null && language.Length == 2)
+                return language.ToLower();
 
-            switch (code.ToLower())
+            // Check if it's a full language name and convert to code
+            if (language != null && languageNameToCode.TryGetValue(language, out string code))
+                return code;
+
+            // Default fallbacks
+            return language == "auto" ? "auto" : "en";
+        }
+
+        /// <summary>
+        /// Gets the human-readable language name from a code
+        /// </summary>
+        private string DetectLanguageName(string languageCode)
+        {
+            if (string.IsNullOrEmpty(languageCode))
+                return "Unknown";
+
+            // Some common codes to names
+            var codeToName = new Dictionary<string, string>
             {
-                case "pt": return "Portuguese";
-                case "en": return "English";
-                case "it": return "Italian";
-                case "es": return "Spanish";
-                case "fr": return "French";
-                case "de": return "German";
-                default: return code;
-            }
+                { "en", "English" },
+                { "pt", "Portuguese" },
+                { "es", "Spanish" },
+                { "fr", "French" },
+                { "de", "German" },
+                { "it", "Italian" },
+                { "auto", "Auto-detected" }
+            };
+
+            return codeToName.TryGetValue(languageCode.ToLower(), out string name) ? name : languageCode;
         }
     }
 
-    // Implementation of OpenAI API service
+    /// <summary>
+    /// Translation service using OpenAI API
+    /// </summary>
     public class OpenAITranslationService : ITranslationService
     {
         private string apiKey;
-        private HttpClient httpClient;
-        private const string ApiEndpoint = "https://api.openai.com/v1/chat/completions";
+        private readonly HttpClient httpClient;
+
+        // Full language names to language codes mapping
+        private readonly Dictionary<string, string> languageNameToCode = new Dictionary<string, string>
+        {
+            { "English", "en" },
+            { "Portuguese", "pt" },
+            { "Spanish", "es" },
+            { "French", "fr" },
+            { "German", "de" },
+            { "Italian", "it" },
+            { "Auto Detect", "auto" }
+        };
 
         public OpenAITranslationService()
         {
             httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
 
         public void SetApiKey(string apiKey)
         {
             this.apiKey = apiKey;
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
         }
 
         public async Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone)
         {
-            TranslationResult result = new TranslationResult();
-
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                result.ErrorMessage = "OpenAI API key is not configured.";
-                return result;
-            }
-
             try
             {
-                // Convert language codes to full names for better AI performance
-                string sourceLang = MapLanguageCodeToName(sourceLanguage);
-                string targetLang = MapLanguageCodeToName(targetLanguage);
+                // Validate inputs
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    return TranslationResult.CreateError("Text is empty");
+                }
 
-                // Create AI prompt based on parameters
-                string prompt = CreateTranslationPrompt(text, sourceLang, targetLang, tone);
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    return TranslationResult.CreateError("OpenAI API key is not configured");
+                }
 
-                // Configure request
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+                // Ensure we have proper language codes
+                string sourceCode = EnsureLanguageCode(sourceLanguage);
+                string targetCode = EnsureLanguageCode(targetLanguage);
 
-                // Create request body
+                // Get language names for better prompts
+                string targetName = DetectLanguageName(targetCode);
+
+                // Create the OpenAI API request
+                string apiUrl = "https://api.openai.com/v1/chat/completions";
+
+                // Build the prompt for translation with tone
+                string systemPrompt = "You are a professional translator. Translate text accurately while maintaining the original meaning and style. Only respond with the translation, no explanations or additional text.";
+                string userPrompt = BuildTranslationPrompt(text, sourceCode, targetCode, tone);
+
+                // Create the request body (using GPT-3.5 for cost efficiency)
                 var requestBody = new
                 {
-                    model = "gpt-3.5-turbo", // More economical and fast model for translations
+                    model = "gpt-3.5-turbo",
                     messages = new[]
                     {
-                        new { role = "system", content = "You are a precise professional translator. Respond only with the translated text, without additional explanations." },
-                        new { role = "user", content = prompt }
+                        new { role = "system", content = systemPrompt },
+                        new { role = "user", content = userPrompt }
                     },
-                    temperature = 0.3, // Low value for more consistency
+                    temperature = 0.3, // Lower temp for more accurate translations
                     max_tokens = 2048
                 };
 
-                var jsonRequest = JsonSerializer.Serialize(requestBody);
+                // Serialize to JSON
+                string jsonRequest = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
                 // Send request
-                var response = await httpClient.PostAsync(ApiEndpoint, content);
+                var response = await httpClient.PostAsync(apiUrl, content);
+                string responseJson = await response.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode)
+                // Check for success
+                if (!response.IsSuccessStatusCode)
                 {
-                    var jsonResponse = await response.Content.ReadAsStringAsync();
-                    using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
-                    {
-                        var choices = doc.RootElement.GetProperty("choices");
-                        if (choices.GetArrayLength() > 0)
-                        {
-                            var message = choices[0].GetProperty("message");
-                            var translatedText = message.GetProperty("content").GetString();
-
-                            // Clean up any extra formatting
-                            translatedText = CleanTranslationOutput(translatedText);
-
-                            result.Success = true;
-                            result.TranslatedText = translatedText;
-
-                            // For OpenAI, we don't have automatic language detection, so we use what was provided
-                            // or indicate it was done by AI
-                            result.DetectedLanguage = sourceLanguage == "auto" ?
-                                "Detected by AI" : MapLanguageCodeToName(sourceLanguage);
-                        }
-                        else
-                        {
-                            result.ErrorMessage = "Could not get translation from OpenAI.";
-                        }
-                    }
+                    return TranslationResult.CreateError($"OpenAI API error: {response.StatusCode}, {responseJson}");
                 }
-                else
+
+                // Parse the response
+                using (JsonDocument doc = JsonDocument.Parse(responseJson))
                 {
-                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    JsonElement root = doc.RootElement;
+
+                    // Check for errors
+                    if (root.TryGetProperty("error", out JsonElement errorElement))
                     {
-                        result.ErrorMessage = "Chave de API inválida. Verifique se você está usando a chave correta da OpenAI.";
+                        string message = errorElement.TryGetProperty("message", out JsonElement messageElement)
+                            ? messageElement.GetString()
+                            : "Unknown API error";
+                        return TranslationResult.CreateError(message);
                     }
-                    else if ((int)response.StatusCode == 429) // 429 é o código para Too Many Requests
+
+                    // Extract translated text from the response
+                    if (root.TryGetProperty("choices", out JsonElement choices) &&
+                        choices.GetArrayLength() > 0)
                     {
-                        result.ErrorMessage = "Limite de requisições da OpenAI excedido. Aguarde alguns minutos e tente novamente.";
+                        var firstChoice = choices[0];
+                        if (firstChoice.TryGetProperty("message", out JsonElement message) &&
+                            message.TryGetProperty("content", out JsonElement content1))
+                        {
+                            string translatedText = content1.GetString();
+
+                            // Clean up any quotes or formatting from the AI response
+                            translatedText = CleanTranslationResponse(translatedText);
+
+                            // Try to extract detected language info if source was auto
+                            string detectedLang = sourceCode == "auto" ? ExtractDetectedLanguage(translatedText) : DetectLanguageName(sourceCode);
+
+                            return TranslationResult.CreateSuccess(translatedText, detectedLang);
+                        }
                     }
-                    else
-                    {
-                        result.ErrorMessage = $"Erro na API OpenAI: {response.StatusCode} - Verifique sua conexão ou contate o suporte.";
-                    }
+
+                    return TranslationResult.CreateError("Unable to parse translation from response");
                 }
             }
             catch (Exception ex)
             {
-                result.ErrorMessage = $"Error translating with OpenAI: {ex.Message}";
+                return TranslationResult.CreateError($"Translation error: {ex.Message}");
             }
-
-            return result;
         }
 
-        private string CreateTranslationPrompt(string text, string sourceLanguage, string targetLanguage, string tone)
+        /// <summary>
+        /// Builds a prompt for translation with the specified tone
+        /// </summary>
+        private string BuildTranslationPrompt(string text, string sourceCode, string targetCode, string tone)
         {
+            // Get human-readable language names for clarity in the prompt
+            string sourceName = sourceCode == "auto" ? "auto-detected" : DetectLanguageName(sourceCode);
+            string targetName = DetectLanguageName(targetCode);
+
+            // Build a detailed prompt that emphasizes only outputting the translated text
             string prompt;
 
-            if (sourceLanguage == "auto" || sourceLanguage == "Auto Detect")
+            if (sourceCode == "auto")
             {
-                prompt = $"Translate the following text to {targetLanguage}:\n\n{text}";
+                prompt = $"Translate the following text into {targetName} with a {tone} tone. Detect the source language. Only return the translated text without comments, explanations, or quotes:\n\n{text}";
             }
             else
             {
-                prompt = $"Translate the following text from {sourceLanguage} to {targetLanguage}:\n\n{text}";
-            }
-
-            // Add tone instructions if not neutral
-            if (tone.ToLower() != "neutral")
-            {
-                switch (tone.ToLower())
-                {
-                    case "formal":
-                        prompt += "\n\nUse a formal and professional tone in the translation.";
-                        break;
-                    case "casual":
-                        prompt += "\n\nUse a casual and colloquial tone in the translation.";
-                        break;
-                    case "technical":
-                        prompt += "\n\nUse precise technical terminology in the translation.";
-                        break;
-                    case "professional":
-                        prompt += "\n\nUse a business-appropriate tone in the translation.";
-                        break;
-                }
+                prompt = $"Translate the following {sourceName} text into {targetName} with a {tone} tone. Only return the translated text without comments, explanations, or quotes:\n\n{text}";
             }
 
             return prompt;
         }
 
-        // Clean up any formatting or extra text in the translation
-        private string CleanTranslationOutput(string text)
+        /// <summary>
+        /// Cleans up the translation response from common formatting issues
+        /// </summary>
+        private string CleanTranslationResponse(string response)
         {
-            if (string.IsNullOrEmpty(text))
-                return text;
+            if (string.IsNullOrEmpty(response))
+                return response;
 
-            // Remove any quotes that may wrap the text
-            text = text.Trim('"', '\'', ' ', '\n', '\r');
-
-            // Some models like to prefix with "Translation: " - remove that
-            if (text.StartsWith("Translation:", StringComparison.OrdinalIgnoreCase))
+            // Remove any explanation text that might be included at the beginning or end
+            string[] commonPrefixes = new[]
             {
-                text = text.Substring("Translation:".Length).Trim();
+                "Here's the translation:",
+                "Translation:",
+                "Here is the translation:",
+                "Translated text:",
+                "The translation is:"
+            };
+
+            string cleanedResponse = response;
+
+            foreach (var prefix in commonPrefixes)
+            {
+                if (cleanedResponse.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    cleanedResponse = cleanedResponse.Substring(prefix.Length).Trim();
+                }
             }
 
-            return text;
+            // Remove quotes if the text is wrapped in them
+            if ((cleanedResponse.StartsWith("\"") && cleanedResponse.EndsWith("\"")) ||
+                (cleanedResponse.StartsWith("'") && cleanedResponse.EndsWith("'")))
+            {
+                cleanedResponse = cleanedResponse.Substring(1, cleanedResponse.Length - 2);
+            }
+
+            // Remove detected language info if included at the end
+            int detectedIndex = cleanedResponse.LastIndexOf("(Detected language:", StringComparison.OrdinalIgnoreCase);
+            if (detectedIndex > 0)
+            {
+                cleanedResponse = cleanedResponse.Substring(0, detectedIndex).Trim();
+            }
+
+            return cleanedResponse.Trim();
         }
 
-        // Map language codes to names
-        private string MapLanguageCodeToName(string code)
+        /// <summary>
+        /// Try to extract detected language information from the response
+        /// </summary>
+        private string ExtractDetectedLanguage(string response)
         {
-            if (string.IsNullOrEmpty(code) || code == "auto") return "Auto Detect";
-
-            switch (code.ToLower())
+            // Look for detected language info in parentheses
+            int startIndex = response.LastIndexOf("(Detected language:", StringComparison.OrdinalIgnoreCase);
+            if (startIndex >= 0)
             {
-                case "pt": return "Portuguese";
-                case "en": return "English";
-                case "it": return "Italian";
-                case "es": return "Spanish";
-                case "fr": return "French";
-                case "de": return "German";
-                default: return code;
+                int endIndex = response.IndexOf(')', startIndex);
+                if (endIndex > startIndex)
+                {
+                    string langInfo = response.Substring(startIndex + 19, endIndex - startIndex - 19).Trim();
+                    return langInfo;
+                }
             }
+
+            // If no language info found, return unknown
+            return "Auto-detected";
+        }
+
+        /// <summary>
+        /// Ensures we have a valid language code
+        /// </summary>
+        private string EnsureLanguageCode(string language)
+        {
+            // If already a valid 2-letter code, just return it
+            if (language != null && language.Length == 2)
+                return language.ToLower();
+
+            // Check if it's a full language name and convert to code
+            if (language != null && languageNameToCode.TryGetValue(language, out string code))
+                return code;
+
+            // Default fallbacks
+            return language == "auto" ? "auto" : "en";
+        }
+
+        /// <summary>
+        /// Gets the human-readable language name from a code
+        /// </summary>
+        private string DetectLanguageName(string languageCode)
+        {
+            if (string.IsNullOrEmpty(languageCode))
+                return "Unknown";
+
+            // Some common codes to names
+            var codeToName = new Dictionary<string, string>
+            {
+                { "en", "English" },
+                { "pt", "Portuguese" },
+                { "es", "Spanish" },
+                { "fr", "French" },
+                { "de", "German" },
+                { "it", "Italian" },
+                { "auto", "auto-detected" }
+            };
+
+            return codeToName.TryGetValue(languageCode.ToLower(), out string name) ? name : languageCode;
         }
     }
 }
