@@ -13,7 +13,10 @@
 		<RootNamespace>ClipboardTranslator</RootNamespace>
 		<AssemblyName>Translator</AssemblyName>
 	</PropertyGroup>
-
+	<ItemGroup>
+		<PackageReference Include="Costura.Fody" Version="5.7.0" />
+		<PackageReference Include="Fody" Version="6.6.4" PrivateAssets="all" />
+	</ItemGroup>
 	<ItemGroup>
 		<None Remove="Resources\translate_icon.ico" />
 		<None Remove="Resources\translate_icon.png" />
