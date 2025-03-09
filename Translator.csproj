@@ -96,6 +96,7 @@
     <Compile Include="ApiKeysWindow.xaml.cs">
       <DependentUpon>ApiKeysWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="notification-service.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="clipboard-monitor.cs" />
     <Compile Include="translation-service-sound.cs" />

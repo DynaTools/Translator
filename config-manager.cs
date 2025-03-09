@@ -15,11 +15,13 @@ namespace ClipboardTranslator
         public string PreferredService { get; set; } = "Gemini"; // Gemini or OpenAI
         public bool StartWithWindows { get; set; } = false;
         public bool StartMinimized { get; set; } = false;
-        public bool PlaySoundOnTranslation { get; set; } = false; // Alterado para false
+        public bool PlaySoundOnTranslation { get; set; } = false;
         public int TranslationsToday { get; set; } = 0;
         public DateTime LastTranslationDate { get; set; } = DateTime.MinValue;
-        public int MaxTokensLimit { get; set; } = 1000; // Valor padrão
-        public bool EnableTokenLimit { get; set; } = true; // Habilitado por padrão
+        public int MaxTokensLimit { get; set; } = 200; // Alterado para 200 como solicitado
+        public bool EnableTokenLimit { get; set; } = true;
+        public bool MinimizeToTrayOnClose { get; set; } = true; // Nova configuração para minimizar em vez de fechar
+        public bool ShowNotificationPopup { get; set; } = true; // Nova configuração para mostrar pop-up de notificação
     }
 
     public static class ConfigManager
@@ -51,6 +53,16 @@ namespace ClipboardTranslator
                     if (settings != null && string.IsNullOrEmpty(settings.GeminiApiKey) && !string.IsNullOrEmpty(settings.GoogleApiKey))
                     {
                         settings.GeminiApiKey = settings.GoogleApiKey;
+                    }
+
+                    // Set default values for new properties if they haven't been set yet
+                    if (settings != null)
+                    {
+                        // Ensure MaxTokensLimit is set to 200 if using the default value 1000
+                        if (settings.MaxTokensLimit == 1000)
+                        {
+                            settings.MaxTokensLimit = 200;
+                        }
                     }
 
                     // Return the read settings

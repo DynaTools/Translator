@@ -20,14 +20,16 @@
                     <CheckBox x:Name="StartWithWindowsCheckBox" Content="Start with Windows" Margin="0,5"/>
                     <CheckBox x:Name="StartMinimizedCheckBox" Content="Start minimized in tray" Margin="0,5"/>
                     <CheckBox x:Name="PlaySoundCheckBox" Content="Play sound when translation completes" Margin="0,5"/>
+                    <CheckBox x:Name="MinimizeToTrayOnCloseCheckBox" Content="Minimizar para a bandeja ao fechar" Margin="0,5"/>
+                    <CheckBox x:Name="ShowNotificationPopupCheckBox" Content="Mostrar notificação quando tradução for concluída" Margin="0,5"/>
                 </StackPanel>
             </GroupBox>
 
-            <GroupBox Header="Limite de Tokens" Margin="0,0,0,15" Padding="10">
+            <GroupBox Header="Token Limit" Margin="0,0,0,15" Padding="10">
                 <StackPanel>
-                    <CheckBox x:Name="EnableTokenLimitCheckBox" Content="Limitar tokens para tradução" Margin="0,5"/>
+                    <CheckBox x:Name="EnableTokenLimitCheckBox" Content="Limit tokens for translation" Margin="0,5"/>
                     <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Limite máximo de tokens:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Text="Maximum token limit:" VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <TextBox x:Name="MaxTokensTextBox" Width="80" PreviewTextInput="NumberValidationTextBox"/>
                     </StackPanel>
                 </StackPanel>

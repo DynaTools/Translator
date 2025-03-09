@@ -44,6 +44,7 @@ namespace Translator
         {
             InitializeComponent();
             InitializeTrayIcon();
+            NotificationService.Initialize(trayIcon);
             InitializeLanguageCodes();
             SetupLanguageCombos();
             LoadSettings();
@@ -56,6 +57,31 @@ namespace Translator
             // Configure events for when the window is loaded and closed
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
+        }
+
+        private void SaveAllSettings()
+        {
+            // Salvar configurações atuais
+            if (settings != null)
+            {
+                if (SourceLanguage?.SelectedItem != null)
+                {
+                    settings.DefaultSourceLanguage = ((ComboBoxItem)SourceLanguage.SelectedItem).Content.ToString();
+                }
+
+                if (TargetLanguage?.SelectedItem != null)
+                {
+                    settings.DefaultTargetLanguage = ((ComboBoxItem)TargetLanguage.SelectedItem).Content.ToString();
+                }
+
+                if (TranslationTone?.SelectedItem != null)
+                {
+                    settings.DefaultTone = ((ComboBoxItem)TranslationTone.SelectedItem).Content.ToString();
+                }
+
+                ConfigManager.SaveSettings(settings);
+                DebugLog("All settings saved");
+            }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -77,18 +103,29 @@ namespace Translator
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            // Remove tray icon
-            if (trayIcon != null)
+            // Se a configuração estiver habilitada, minimizar para a bandeja em vez de fechar
+            if (settings.MinimizeToTrayOnClose)
             {
-                trayIcon.Visible = false;
-                trayIcon.Dispose();
+                e.Cancel = true;
+                this.Hide();
+                trayIcon.Visible = true;
             }
+            else
+            {
+                // Se devemos fechar, remover tray icon
+                if (trayIcon != null)
+                {
+                    trayIcon.Visible = false;
+                    trayIcon.Dispose();
+                }
 
-            // Disable clipboard monitoring
-            clipboardMonitor.Dispose();
+                // Desabilitar monitoramento da área de transferência
+                clipboardMonitor.Dispose();
+            }
         }
 
         private void InitializeTrayIcon()
+
         {
             trayIcon = new NotifyIcon
             {
@@ -408,6 +445,15 @@ namespace Translator
                             TranslationPreview.Text = result.TranslatedText;
                             LastDetectedLanguage.Text = result.DetectedLanguage;
                             DebugLog("Translation completed");
+
+                            // Obter o nome do idioma de origem no formato legível (como "English" ou "Portuguese")
+                            string sourceLangDisplay = ((ComboBoxItem)SourceLanguage.SelectedItem).Content.ToString();
+
+                            // Obter o nome do idioma de destino no formato legível
+                            string targetLangDisplay = ((ComboBoxItem)TargetLanguage.SelectedItem).Content.ToString();
+
+                            // Chamar o serviço de notificação para mostrar uma mensagem ao usuário
+                            NotificationService.ShowTranslationCompleted(sourceLangDisplay, targetLangDisplay, settings.ShowNotificationPopup);
 
                             // Check if should play sound
                             if (settings.PlaySoundOnTranslation)

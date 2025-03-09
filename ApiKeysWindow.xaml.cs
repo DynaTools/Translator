@@ -27,7 +27,11 @@ namespace Translator
                 StartMinimized = currentSettings.StartMinimized,
                 PlaySoundOnTranslation = currentSettings.PlaySoundOnTranslation,
                 TranslationsToday = currentSettings.TranslationsToday,
-                LastTranslationDate = currentSettings.LastTranslationDate
+                LastTranslationDate = currentSettings.LastTranslationDate,
+                MaxTokensLimit = currentSettings.MaxTokensLimit,
+                EnableTokenLimit = currentSettings.EnableTokenLimit,
+                MinimizeToTrayOnClose = currentSettings.MinimizeToTrayOnClose,
+                ShowNotificationPopup = currentSettings.ShowNotificationPopup
             };
 
             // Configure interface with current values
@@ -66,10 +70,10 @@ namespace Translator
 
         private void GeminiHelpLink_Click(object sender, RoutedEventArgs e)
         {
-            // Open help page in browser
+            // Open help page in browser with updated documentation URL
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "https://ai.google.dev/tutorials/setup",
+                FileName = "https://ai.google.dev/tutorials/ai-studio_quickstart",
                 UseShellExecute = true
             });
         }
@@ -100,7 +104,7 @@ namespace Translator
 
             try
             {
-                // Create temporary service instance
+                // Create temporary service instance with updated implementation
                 var testService = new GeminiTranslationService();
                 testService.SetApiKey(apiKey);
 

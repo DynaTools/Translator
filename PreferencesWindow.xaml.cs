@@ -28,7 +28,9 @@ namespace Translator
                 TranslationsToday = currentSettings.TranslationsToday,
                 LastTranslationDate = currentSettings.LastTranslationDate,
                 MaxTokensLimit = currentSettings.MaxTokensLimit,
-                EnableTokenLimit = currentSettings.EnableTokenLimit
+                EnableTokenLimit = currentSettings.EnableTokenLimit,
+                MinimizeToTrayOnClose = currentSettings.MinimizeToTrayOnClose,
+                ShowNotificationPopup = currentSettings.ShowNotificationPopup
             };
 
             // Configurar a interface com os valores atuais
@@ -37,6 +39,8 @@ namespace Translator
             PlaySoundCheckBox.IsChecked = UpdatedSettings.PlaySoundOnTranslation;
             EnableTokenLimitCheckBox.IsChecked = UpdatedSettings.EnableTokenLimit;
             MaxTokensTextBox.Text = UpdatedSettings.MaxTokensLimit.ToString();
+            MinimizeToTrayOnCloseCheckBox.IsChecked = UpdatedSettings.MinimizeToTrayOnClose;
+            ShowNotificationPopupCheckBox.IsChecked = UpdatedSettings.ShowNotificationPopup;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -46,6 +50,8 @@ namespace Translator
             UpdatedSettings.StartMinimized = StartMinimizedCheckBox.IsChecked ?? false;
             UpdatedSettings.PlaySoundOnTranslation = PlaySoundCheckBox.IsChecked ?? false;
             UpdatedSettings.EnableTokenLimit = EnableTokenLimitCheckBox.IsChecked ?? true;
+            UpdatedSettings.MinimizeToTrayOnClose = MinimizeToTrayOnCloseCheckBox.IsChecked ?? true;
+            UpdatedSettings.ShowNotificationPopup = ShowNotificationPopupCheckBox.IsChecked ?? true;
 
             if (int.TryParse(MaxTokensTextBox.Text, out int maxTokens) && maxTokens > 0)
             {
