@@ -145,9 +145,24 @@ namespace Translator
                     await Dispatcher.InvokeAsync(() =>
                     {
                         StatusBarText.Text = $"Translation error: {translationResult.ErrorMessage}";
+
+                        // Mensagem mais amigável para o usuário
+                        string messageToShow = translationResult.ErrorMessage;
+
+                        // Adicionar dicas para resolver se for um erro de cota
+                        if (translationResult.DetailedError != null &&
+                            (translationResult.DetailedError.Contains("429") ||
+                             translationResult.DetailedError.Contains("RESOURCE_EXHAUSTED")))
+                        {
+                            messageToShow += "\n\nSugestões para resolver:\n" +
+                                             "1. Aguarde alguns minutos e tente novamente\n" +
+                                             "2. Verifique seu plano de API e limites de uso\n" +
+                                             "3. Considere alternar para outro provedor de API em Configurações > Chaves de API";
+                        }
+
                         WpfMessageBox.Show(
-                            $"Translation Error: {translationResult.ErrorMessage}",
-                            "Error",
+                            messageToShow,
+                            "Erro de Tradução",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
                     });

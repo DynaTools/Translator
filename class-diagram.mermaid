@@ -1,0 +1,166 @@
+classDiagram
+    class MainWindow {
+        -ClipboardMonitor clipboardMonitor
+        -ITranslationService translationService
+        -TranslationSettings settings
+        -AIParameters aiParameters
+        -string lastCopiedText
+        -string lastDetectedLanguage
+        -Dictionary~string, TranslationResult~ translationCache
+        -NotifyIcon trayIcon
+        -bool isMonitoringEnabled
+        +MainWindow()
+        -InitializeTranslationService()
+        -InitializeClipboardMonitor()
+        -InitializeSystemTrayIcon()
+        -SetEventHandlers()
+        -OnWindowClosing()
+        -SaveSettings()
+        -ToggleWindowVisibility()
+        -MinimizeToTray()
+        -ToggleTranslationStatus()
+        +DebugLog(string)
+        -TranslateTextAsync(string)
+        -ApplyTranslationResultAsync(TranslationResult)
+    }
+    
+    class TranslationSettings {
+        +string DefaultSourceLanguage
+        +string DefaultTargetLanguage
+        +string DefaultTone
+        +string GoogleApiKey
+        +string GeminiApiKey
+        +string OpenAIApiKey
+        +string PreferredService
+        +bool StartWithWindows
+        +bool StartMinimized
+        +bool PlaySoundOnTranslation
+        +int TranslationsToday
+        +DateTime LastTranslationDate
+        +int MaxTokensLimit
+        +bool EnableTokenLimit
+        +bool MinimizeToTrayOnClose
+        +bool ShowNotificationPopup
+        +AIParameters AIParameters
+    }
+    
+    class AIParameters {
+        +double Temperature
+        +double TopP
+        +double FrequencyPenalty
+        +double PresencePenalty
+        +string ModelVersion
+    }
+    
+    class ConfigManager {
+        -string ConfigFolder
+        -string ConfigFile
+        +TranslationSettings LoadSettings()
+        +void SaveSettings(TranslationSettings)
+        +void SetStartWithWindows(bool)
+    }
+    
+    class ClipboardMonitor {
+        -IntPtr nextClipboardViewer
+        -Window targetWindow
+        -HwndSource hwndSource
+        -DateTime lastEventTime
+        -TimeSpan minEventInterval
+        -SemaphoreSlim eventSemaphore
+        +event ClipboardChangedEventHandler ClipboardChanged
+        +ClipboardMonitor(Window)
+        +Initialize(IntPtr)
+        -IntPtr WndProc(IntPtr, int, IntPtr, IntPtr, ref bool)
+        -HandleClipboardChange()
+        +SetMonitoringEnabled(bool)
+        +Dispose()
+    }
+    
+    interface ITranslationService {
+        +Task~TranslationResult~ TranslateAsync(string, string, string, string)
+        +void SetApiKey(string)
+        +void SetAIParameters(AIParameters)
+    }
+    
+    class GeminiTranslationService {
+        -string apiKey
+        -AIParameters aiParameters
+        +Task~TranslationResult~ TranslateAsync(string, string, string, string)
+        +void SetApiKey(string)
+        +void SetAIParameters(AIParameters)
+    }
+    
+    class OpenAITranslationService {
+        -string apiKey
+        -AIParameters aiParameters
+        +Task~TranslationResult~ TranslateAsync(string, string, string, string)
+        +void SetApiKey(string)
+        +void SetAIParameters(AIParameters)
+    }
+    
+    class TranslationResult {
+        +bool Success
+        +string TranslatedText
+        +string ErrorMessage
+        +string DetectedLanguage
+    }
+    
+    class AboutWindow {
+        +AboutWindow()
+        -CloseButton_Click()
+        -Hyperlink_Click()
+    }
+    
+    class ApiKeysWindow {
+        +TranslationSettings UpdatedSettings
+        +ApiKeysWindow(TranslationSettings)
+        -SaveButton_Click()
+        -CancelButton_Click()
+        -GeminiHelpLink_Click()
+        -OpenAIHelpLink_Click()
+        -TestGeminiButton_Click()
+        -TestOpenAIButton_Click()
+    }
+    
+    class PreferencesWindow {
+        +TranslationSettings UpdatedSettings
+        +PreferencesWindow(TranslationSettings)
+        -SaveButton_Click()
+        -CancelButton_Click()
+        -ResetStats_Click()
+        -NumberValidationTextBox()
+    }
+    
+    class NotificationService {
+        -NotifyIcon trayIcon
+        +Initialize(NotifyIcon)
+        +ShowTranslationCompleted(string, string, bool)
+        +ShowWarning(string, string)
+        +ShowError(string, string)
+    }
+    
+    class SoundService {
+        -bool isPlaying
+        -object lockObject
+        +PlayTranslationCompleteSound()
+    }
+    
+    MainWindow --> ClipboardMonitor
+    MainWindow --> ITranslationService
+    MainWindow --> TranslationSettings
+    MainWindow --> NotificationService
+    MainWindow ..> AboutWindow
+    MainWindow ..> ApiKeysWindow
+    MainWindow ..> PreferencesWindow
+    MainWindow --> AIParameters
+    MainWindow --> SoundService
+    
+    TranslationSettings --> AIParameters
+    
+    ITranslationService <|.. GeminiTranslationService
+    ITranslationService <|.. OpenAITranslationService
+    
+    ApiKeysWindow --> TranslationSettings
+    PreferencesWindow --> TranslationSettings
+    
+    ConfigManager ..> TranslationSettings

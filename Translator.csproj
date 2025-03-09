@@ -155,12 +155,16 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="class-diagram.mermaid" />
     <None Include="ClipboardTranslator.csproj" />
+    <None Include="contributing-file.md" />
+    <None Include="license-file.md" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Include="readme-file.md" />
     <None Include="Translator_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>

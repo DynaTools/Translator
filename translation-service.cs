@@ -1,65 +1,38 @@
 using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Web;
+using System.Collections.Generic;
 
 namespace ClipboardTranslator
 {
-    // Define the interface for translation services
-    public interface ITranslationService
-    {
-        void SetApiKey(string apiKey);
-        void SetAIParameters(AIParameters parameters);
-        Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone);
-    }
-
-    // Result class to hold translation information
     public class TranslationResult
     {
         public bool Success { get; set; }
         public string TranslatedText { get; set; }
         public string DetectedLanguage { get; set; }
         public string ErrorMessage { get; set; }
+        public string DetailedError { get; set; } // Campo adicional para erros detalhados
     }
 
-    // AI parameters class to hold settings for translation models
-    public class TranslationServiceBase
+    public interface ITranslationService
     {
-        protected AIParameters aiParameters = new AIParameters();
-
-        public void SetAIParameters(AIParameters parameters)
-        {
-            aiParameters = parameters ?? new AIParameters();
-        }
+        Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone);
+        void SetApiKey(string apiKey);
+        void SetAIParameters(AIParameters parameters);
     }
 
-    // OpenAI service implementation
-    public class OpenAITranslationService : TranslationServiceBase, ITranslationService
+    public class OpenAITranslationService : ITranslationService
     {
         private string apiKey;
-        private readonly HttpClient httpClient;
-
-        // Language name mapping
-        private static readonly Dictionary<string, string> languageNames = new Dictionary<string, string>
-        {
-            { "en", "English" },
-            { "pt", "Portuguese" },
-            { "es", "Spanish" },
-            { "fr", "French" },
-            { "de", "German" },
-            { "it", "Italian" },
-            { "auto", "Automatically detected" }
-        };
+        private AIParameters aiParameters;
+        private static readonly HttpClient client = new HttpClient();
 
         public OpenAITranslationService()
         {
-            httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-            // Timeout is set to 30 seconds
-            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            aiParameters = new AIParameters();
         }
 
         public void SetApiKey(string apiKey)
@@ -67,150 +40,191 @@ namespace ClipboardTranslator
             this.apiKey = apiKey;
         }
 
+        public void SetAIParameters(AIParameters parameters)
+        {
+            this.aiParameters = parameters ?? new AIParameters();
+        }
+
+        private bool IsQuotaExceededError(Exception ex)
+        {
+            return ex.Message.Contains("429") ||
+                  ex.Message.Contains("quota") ||
+                  ex.Message.Contains("RESOURCE_EXHAUSTED");
+        }
+
         public async Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone)
         {
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return new TranslationResult
+                {
+                    Success = false,
+                    ErrorMessage = "Chave da API não configurada."
+                };
+            }
+
             try
             {
-                // Check for API key
-                if (string.IsNullOrEmpty(apiKey))
+                // Configurar a URL da API e os cabeçalhos
+                var url = "https://api.openai.com/v1/chat/completions";
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+                // Determinar o modelo
+                string model = "gpt-3.5-turbo";
+                if (aiParameters.ModelVersion != "Default")
                 {
-                    return new TranslationResult
+                    if (aiParameters.ModelVersion == "GPT-4")
                     {
-                        Success = false,
-                        ErrorMessage = "API key is not set. Please configure it in Settings > API Keys."
-                    };
+                        model = "gpt-4";
+                    }
                 }
 
-                // Set authorization header with API key
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+                // Construir a mensagem para o modelo
+                string systemPrompt = GetTranslationPrompt(sourceLanguage, targetLanguage, tone);
 
-                // Get language names for better prompting
-                string sourceLangName = languageNames.ContainsKey(sourceLanguage) ? languageNames[sourceLanguage] : sourceLanguage;
-                string targetLangName = languageNames.ContainsKey(targetLanguage) ? languageNames[targetLanguage] : targetLanguage;
-
-                // Create the system message based on the translation request
-                string systemMessage = $"You are a professional translator. Translate the user's text from {sourceLangName} to {targetLangName} using a {tone} tone. Only respond with the translated text, nothing else.";
-
-                // Prepare the request payload
-                var requestPayload = new
+                // Preparar a requisição JSON
+                var requestData = new
                 {
-                    model = GetModelName(),
+                    model = model,
                     messages = new[]
                     {
-                        new { role = "system", content = systemMessage },
+                        new { role = "system", content = systemPrompt },
                         new { role = "user", content = text }
                     },
                     temperature = aiParameters.Temperature,
                     top_p = aiParameters.TopP,
                     frequency_penalty = aiParameters.FrequencyPenalty,
-                    presence_penalty = aiParameters.PresencePenalty
+                    presence_penalty = aiParameters.PresencePenalty,
                 };
 
-                // Convert the payload to JSON
-                string jsonPayload = JsonSerializer.Serialize(requestPayload);
-                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                var json = JsonSerializer.Serialize(requestData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // Send the request to the OpenAI API
-                var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+                // Fazer a requisição
+                var response = await client.PostAsync(url, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
 
-                // Check if the request was successful
-                if (response.IsSuccessStatusCode)
+                // Verificar por erros na resposta
+                if (!response.IsSuccessStatusCode)
                 {
-                    // Parse the response
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
+                    // Tratamento específico para erro 429 (Too Many Requests)
+                    if ((int)response.StatusCode == 429)
                     {
-                        JsonElement root = doc.RootElement;
-
-                        // Get the translated text from the choices
-                        if (root.TryGetProperty("choices", out JsonElement choices) && choices.GetArrayLength() > 0)
+                        return new TranslationResult
                         {
-                            string translatedText = choices[0].GetProperty("message").GetProperty("content").GetString();
-
-                            // Return the success result
-                            return new TranslationResult
-                            {
-                                Success = true,
-                                TranslatedText = translatedText,
-                                DetectedLanguage = sourceLangName
-                            };
-                        }
+                            Success = false,
+                            ErrorMessage = "Cota da API excedida. Tente novamente mais tarde ou verifique seu plano de assinatura.",
+                            DetailedError = $"API Error: 429. {responseContent}"
+                        };
                     }
 
-                    // If we got here, there was an issue with parsing the response
                     return new TranslationResult
                     {
                         Success = false,
-                        ErrorMessage = "Failed to parse translation response"
+                        ErrorMessage = $"API Error: {(int)response.StatusCode}. {responseContent}",
+                        DetailedError = responseContent
                     };
                 }
-                else
+
+                // Processar a resposta
+                using (JsonDocument doc = JsonDocument.Parse(responseContent))
                 {
-                    // Read error details
-                    string errorResponse = await response.Content.ReadAsStringAsync();
+                    string translatedText = doc.RootElement
+                        .GetProperty("choices")[0]
+                        .GetProperty("message")
+                        .GetProperty("content")
+                        .GetString();
 
                     return new TranslationResult
                     {
-                        Success = false,
-                        ErrorMessage = $"API Error: {response.StatusCode}. {errorResponse}"
+                        Success = true,
+                        TranslatedText = translatedText,
+                        DetectedLanguage = sourceLanguage == "auto" ? "Auto" : sourceLanguage
                     };
                 }
             }
             catch (Exception ex)
             {
-                return new TranslationResult
+                if (IsQuotaExceededError(ex))
                 {
-                    Success = false,
-                    ErrorMessage = $"Translation Error: {ex.Message}"
-                };
+                    return new TranslationResult
+                    {
+                        Success = false,
+                        ErrorMessage = "Cota da API excedida. Tente novamente mais tarde ou verifique seu plano de assinatura.",
+                        DetailedError = ex.Message
+                    };
+                }
+                else
+                {
+                    return new TranslationResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"Erro na tradução: {ex.Message}",
+                        DetailedError = ex.ToString()
+                    };
+                }
             }
         }
 
-        private string GetModelName()
+        private string GetTranslationPrompt(string sourceLanguage, string targetLanguage, string tone)
         {
-            // Return the appropriate model based on the AI parameters
-            if (string.IsNullOrEmpty(aiParameters.ModelVersion) || aiParameters.ModelVersion == "Default")
+            string fromLanguage = sourceLanguage == "auto" ? "qualquer idioma" : GetLanguageName(sourceLanguage);
+            string toLanguage = GetLanguageName(targetLanguage);
+
+            string prompt = $"Você é um tradutor especializado em traduzir de {fromLanguage} para {toLanguage}.";
+
+            // Adicionar instruções de tom
+            switch (tone.ToLower())
             {
-                return "gpt-3.5-turbo"; // Default model
+                case "formal":
+                    prompt += " Use linguagem formal e técnica, apropriada para documentos de negócios ou acadêmicos.";
+                    break;
+                case "casual":
+                    prompt += " Use linguagem casual e conversacional, como em uma conversa entre amigos.";
+                    break;
+                case "technical":
+                    prompt += " Use terminologia técnica e precisa, apropriada para documentação técnica.";
+                    break;
+                case "professional":
+                    prompt += " Use linguagem profissional, clara e direta, apropriada para comunicação de negócios.";
+                    break;
+                default: // neutral
+                    prompt += " Use linguagem neutra e clara.";
+                    break;
             }
 
-            switch (aiParameters.ModelVersion)
+            prompt += " Traduza apenas o texto, sem adicionar explicações ou notas. Preserve a formatação original.";
+
+            return prompt;
+        }
+
+        private string GetLanguageName(string languageCode)
+        {
+            switch (languageCode.ToLower())
             {
-                case "GPT-3.5 Turbo":
-                    return "gpt-3.5-turbo";
-                case "GPT-4":
-                    return "gpt-4";
-                default:
-                    return "gpt-3.5-turbo"; // Fallback to default
+                case "en": return "inglês";
+                case "pt": return "português";
+                case "es": return "espanhol";
+                case "fr": return "francês";
+                case "de": return "alemão";
+                case "it": return "italiano";
+                default: return languageCode;
             }
         }
     }
 
-    // Gemini service implementation
-    public class GeminiTranslationService : TranslationServiceBase, ITranslationService
+    public class GeminiTranslationService : ITranslationService
     {
         private string apiKey;
-        private readonly HttpClient httpClient;
-
-        // Language name mapping
-        private static readonly Dictionary<string, string> languageNames = new Dictionary<string, string>
-        {
-            { "en", "English" },
-            { "pt", "Portuguese" },
-            { "es", "Spanish" },
-            { "fr", "French" },
-            { "de", "German" },
-            { "it", "Italian" },
-            { "auto", "Automatically detected" }
-        };
+        private AIParameters aiParameters;
+        private static readonly HttpClient client = new HttpClient();
 
         public GeminiTranslationService()
         {
-            httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-            // Timeout is set to 30 seconds
-            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            aiParameters = new AIParameters();
         }
 
         public void SetApiKey(string apiKey)
@@ -218,33 +232,70 @@ namespace ClipboardTranslator
             this.apiKey = apiKey;
         }
 
+        public void SetAIParameters(AIParameters parameters)
+        {
+            this.aiParameters = parameters ?? new AIParameters();
+        }
+
+        private bool IsQuotaExceededError(Exception ex)
+        {
+            return ex.Message.Contains("429") ||
+                   ex.Message.Contains("quota") ||
+                   ex.Message.Contains("RESOURCE_EXHAUSTED");
+        }
+
         public async Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage, string tone)
         {
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return new TranslationResult
+                {
+                    Success = false,
+                    ErrorMessage = "Chave da API não configurada."
+                };
+            }
+
             try
             {
-                // Check for API key
-                if (string.IsNullOrEmpty(apiKey))
+                // Modelo padrão atualizado para Gemini 2.0
+                string model = "gemini-2.0-flash";
+
+                // Configuração dos modelos com base na seleção do usuário
+                if (aiParameters.ModelVersion != "Default")
                 {
-                    // Fall back to a free translation API
-                    return await FallbackTranslationAsync(text, sourceLanguage, targetLanguage);
+                    switch (aiParameters.ModelVersion)
+                    {
+                        case "Gemini Flash":
+                            model = "gemini-2.0-flash";
+                            break;
+                        case "Gemini Pro":
+                            model = "gemini-2.0-pro";
+                            break;
+                        case "Gemini Flash-Lite":
+                            model = "gemini-2.0-flash-lite";
+                            break;
+                    }
                 }
 
-                // Get language names for better prompting
-                string sourceLangName = languageNames.ContainsKey(sourceLanguage) ? languageNames[sourceLanguage] : sourceLanguage;
-                string targetLangName = languageNames.ContainsKey(targetLanguage) ? languageNames[targetLanguage] : targetLanguage;
+                // Endpoint da API v1beta
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
 
-                // Create the prompt based on the translation request
-                string prompt = $"Translate the following text from {sourceLangName} to {targetLangName} using a {tone} tone. Only respond with the translated text, nothing else:\n\n{text}";
+                // Construir a mensagem para o modelo
+                string systemPrompt = GetTranslationPrompt(sourceLanguage, targetLanguage, tone);
 
-                // Prepare the request payload based on the model
-                string modelName = GetModelName();
-
-                var requestPayload = new
+                // Payload simplificado conforme exemplo
+                var requestData = new
                 {
                     contents = new[]
                     {
-                        new { role = "user", parts = new[] { new { text = prompt } } }
-                    },
+                    new
+                    {
+                        parts = new[]
+                        {
+                            new { text = $"{systemPrompt}\n\n{text}" }
+                        }
+                    }
+                },
                     generationConfig = new
                     {
                         temperature = aiParameters.Temperature,
@@ -252,181 +303,61 @@ namespace ClipboardTranslator
                     }
                 };
 
-                // Convert the payload to JSON
-                string jsonPayload = JsonSerializer.Serialize(requestPayload);
-                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                var json = JsonSerializer.Serialize(requestData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // Send the request to the Gemini API
-                string apiEndpoint = $"https://generativelanguage.googleapis.com/v1/models/{modelName}:generateContent?key={apiKey}";
-                var response = await httpClient.PostAsync(apiEndpoint, content);
+                // Fazer a requisição
+                var response = await client.PostAsync(url, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
 
-                // Check if the request was successful
-                if (response.IsSuccessStatusCode)
+                // Verificar por erros na resposta
+                if (!response.IsSuccessStatusCode)
                 {
-                    // Parse the response
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
+                    if ((int)response.StatusCode == 429)
                     {
-                        JsonElement root = doc.RootElement;
-
-                        // Navigate to the content
-                        if (root.TryGetProperty("candidates", out JsonElement candidates) &&
-                            candidates.GetArrayLength() > 0 &&
-                            candidates[0].TryGetProperty("content", out JsonElement content_el) &&
-                            content_el.TryGetProperty("parts", out JsonElement parts) &&
-                            parts.GetArrayLength() > 0 &&
-                            parts[0].TryGetProperty("text", out JsonElement textEl))
+                        return new TranslationResult
                         {
-                            string translatedText = textEl.GetString();
-
-                            // Return the success result
-                            return new TranslationResult
-                            {
-                                Success = true,
-                                TranslatedText = translatedText,
-                                DetectedLanguage = sourceLangName
-                            };
-                        }
+                            Success = false,
+                            ErrorMessage = "Cota da API excedida. Tente novamente mais tarde ou verifique seu plano de assinatura.",
+                            DetailedError = $"API Error: 429. {responseContent}"
+                        };
                     }
 
-                    // If we got here, there was an issue with parsing the response
                     return new TranslationResult
                     {
                         Success = false,
-                        ErrorMessage = "Failed to parse translation response"
+                        ErrorMessage = $"API Error: {(int)response.StatusCode}. {responseContent}",
+                        DetailedError = responseContent
                     };
                 }
-                else
-                {
-                    // Read error details
-                    string errorResponse = await response.Content.ReadAsStringAsync();
 
-                    // If the error is related to the API key or permissions, try fallback
-                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
-                        response.StatusCode == System.Net.HttpStatusCode.Forbidden)
-                    {
-                        return await FallbackTranslationAsync(text, sourceLanguage, targetLanguage);
-                    }
+                // Processar a resposta
+                using (JsonDocument doc = JsonDocument.Parse(responseContent))
+                {
+                    string translatedText = doc.RootElement
+                        .GetProperty("candidates")[0]
+                        .GetProperty("content")
+                        .GetProperty("parts")[0]
+                        .GetProperty("text")
+                        .GetString();
 
                     return new TranslationResult
                     {
-                        Success = false,
-                        ErrorMessage = $"API Error: {response.StatusCode}. {errorResponse}"
+                        Success = true,
+                        TranslatedText = translatedText,
+                        DetectedLanguage = sourceLanguage == "auto" ? "Auto" : sourceLanguage
                     };
                 }
             }
             catch (Exception ex)
             {
-                // Try fallback on any error
-                try
-                {
-                    return await FallbackTranslationAsync(text, sourceLanguage, targetLanguage);
-                }
-                catch
+                if (IsQuotaExceededError(ex))
                 {
                     return new TranslationResult
                     {
                         Success = false,
-                        ErrorMessage = $"Translation Error: {ex.Message}"
-                    };
-                }
-            }
-        }
-
-        private async Task<TranslationResult> FallbackTranslationAsync(string text, string sourceLanguage, string targetLanguage)
-        {
-            try
-            {
-                // Use a free translation API as fallback
-                // This is a basic implementation using a public API endpoint
-
-                // URL encode the text
-                string encodedText = Uri.EscapeDataString(text);
-
-                // Build the request URL
-                string requestUrl = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sourceLanguage}&tl={targetLanguage}&dt=t&q={encodedText}";
-
-                // Send the request
-                var response = await httpClient.GetAsync(requestUrl);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-
-                    // Tente usar uma abordagem mais robusta para analisar o JSON
-                    try
-                    {
-                        // Tratamento simples: extrair a tradução do padrão conhecido
-                        // Normalmente o formato é [[[translated,original,null,null]],null,"en"]
-
-                        // Buscar o primeiro segmento entre aspas após o início do texto "[[[\"
-                        int start = jsonResponse.IndexOf("[[[\"") + 4;
-                        if (start > 4) // Verifica se encontrou o padrão
-                        {
-                            int end = jsonResponse.IndexOf("\",", start);
-                            if (end > start)
-                            {
-                                string translatedText = jsonResponse.Substring(start, end - start);
-
-                                // Decodificar sequências de escape
-                                translatedText = translatedText.Replace("\\\"", "\"").Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\t", "\t");
-
-                                // Tentar extrair o idioma detectado
-                                string detectedLang = "auto";
-                                int langStart = jsonResponse.LastIndexOf(",\"") + 2;
-                                if (langStart > 2)
-                                {
-                                    int langEnd = jsonResponse.IndexOf("\"", langStart);
-                                    if (langEnd > langStart)
-                                    {
-                                        detectedLang = jsonResponse.Substring(langStart, langEnd - langStart);
-
-                                        // Map to language name if possible
-                                        if (languageNames.ContainsKey(detectedLang))
-                                        {
-                                            detectedLang = languageNames[detectedLang];
-                                        }
-                                    }
-                                }
-
-                                return new TranslationResult
-                                {
-                                    Success = true,
-                                    TranslatedText = translatedText,
-                                    DetectedLanguage = detectedLang
-                                };
-                            }
-                        }
-
-                        // Tentar uma abordagem alternativa se a primeira falhar
-                        var segments = System.Text.RegularExpressions.Regex.Matches(jsonResponse, @"\[\""(.*?)\"",");
-                        if (segments.Count > 0)
-                        {
-                            var translationBuilder = new StringBuilder();
-                            foreach (System.Text.RegularExpressions.Match match in segments)
-                            {
-                                string segment = match.Groups[1].Value;
-                                translationBuilder.Append(segment).Append(" ");
-                            }
-
-                            return new TranslationResult
-                            {
-                                Success = true,
-                                TranslatedText = translationBuilder.ToString().Trim(),
-                                DetectedLanguage = "auto"
-                            };
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Registrar erro específico de análise JSON
-                        System.Diagnostics.Debug.WriteLine($"JSON parsing error: {ex.Message}");
-                    }
-
-                    return new TranslationResult
-                    {
-                        Success = false,
-                        ErrorMessage = "Failed to parse translation from fallback service"
+                        ErrorMessage = "Cota da API excedida. Tente novamente mais tarde ou verifique seu plano de assinatura.",
+                        DetailedError = ex.Message
                     };
                 }
                 else
@@ -434,53 +365,72 @@ namespace ClipboardTranslator
                     return new TranslationResult
                     {
                         Success = false,
-                        ErrorMessage = $"Fallback service error: {response.StatusCode}"
+                        ErrorMessage = $"Erro na tradução: {ex.Message}",
+                        DetailedError = ex.ToString()
                     };
                 }
             }
-            catch (Exception ex)
-            {
-                return new TranslationResult
-                {
-                    Success = false,
-                    ErrorMessage = $"Fallback translation error: {ex.Message}"
-                };
-            }
         }
 
-        private string GetModelName()
+        private string GetTranslationPrompt(string sourceLanguage, string targetLanguage, string tone)
         {
-            // Return the appropriate model based on the AI parameters
-            if (string.IsNullOrEmpty(aiParameters.ModelVersion) ||
-                aiParameters.ModelVersion == "Default" ||
-                aiParameters.ModelVersion == "Gemini Flash")
+            string fromLanguage = sourceLanguage == "auto" ? "qualquer idioma" : GetLanguageName(sourceLanguage);
+            string toLanguage = GetLanguageName(targetLanguage);
+
+            string prompt = $"Você é um tradutor especializado em traduzir de {fromLanguage} para {toLanguage}.";
+
+            // Adicionar instruções de tom
+            switch (tone.ToLower())
             {
-                return "gemini-1.5-flash"; // Default model
+                case "formal":
+                    prompt += " Use linguagem formal e técnica, apropriada para documentos de negócios ou acadêmicos.";
+                    break;
+                case "casual":
+                    prompt += " Use linguagem casual e conversacional, como em uma conversa entre amigos.";
+                    break;
+                case "technical":
+                    prompt += " Use terminologia técnica e precisa, apropriada para documentação técnica.";
+                    break;
+                case "professional":
+                    prompt += " Use linguagem profissional, clara e direta, apropriada para comunicação de negócios.";
+                    break;
+                default: // neutral
+                    prompt += " Use linguagem neutra e clara.";
+                    break;
             }
 
-            switch (aiParameters.ModelVersion)
+            prompt += " Traduza apenas o texto, sem adicionar explicações ou notas. Preserve a formatação original.";
+
+            return prompt;
+        }
+
+        private string GetLanguageName(string languageCode)
+        {
+            switch (languageCode.ToLower())
             {
-                case "Gemini Pro":
-                    return "gemini-1.5-pro";
-                default:
-                    return "gemini-1.5-flash"; // Fallback to default
+                case "en": return "inglês";
+                case "pt": return "português";
+                case "es": return "espanhol";
+                case "fr": return "francês";
+                case "de": return "alemão";
+                case "it": return "italiano";
+                default: return languageCode;
             }
         }
     }
 
-    // Helper class for estimating token count
+    // Classe para estimar tokens
     public static class TextTokenizer
     {
-        // Simple approximation: ~4 characters per token for English text
-        // This is just an estimation, actual tokenization depends on the model
-        private const int CHARS_PER_TOKEN = 4;
-
+        // Estimativa simples: em média, 1 token = 4 caracteres em inglês
+        // Para outros idiomas isso pode variar, mas é uma boa aproximação
         public static int EstimateTokenCount(string text)
         {
             if (string.IsNullOrEmpty(text))
                 return 0;
 
-            return (text.Length + CHARS_PER_TOKEN - 1) / CHARS_PER_TOKEN;
+            // Aproximação: dividir o número de caracteres por 4
+            return (int)Math.Ceiling(text.Length / 4.0);
         }
     }
 }

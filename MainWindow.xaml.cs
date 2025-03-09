@@ -48,7 +48,8 @@ namespace Translator
         private NotifyIcon trayIcon;
 
         // Translation monitoring status
-        private bool isMonitoringEnabled = true;
+        // Alteração aqui: mudamos para false para começar pausado
+        private bool isMonitoringEnabled = false;
 
         public MainWindow()
         {
@@ -103,6 +104,7 @@ namespace Translator
             translationService.SetAIParameters(aiParameters);
         }
 
+
         private void InitializeClipboardMonitor()
         {
             // Create a clipboard monitor instance
@@ -116,6 +118,9 @@ namespace Translator
             {
                 var windowHandle = new WindowInteropHelper(this).Handle;
                 clipboardMonitor.Initialize(windowHandle);
+
+                // Adicionando essa linha para garantir que o monitor comece pausado
+                clipboardMonitor.SetMonitoringEnabled(isMonitoringEnabled);
 
                 // Check if we should start minimized
                 if (settings.StartMinimized)
