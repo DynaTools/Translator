@@ -108,7 +108,7 @@
             </Grid>
 
             <!-- Translation Preview with Tabs for Multiple Features -->
-            <TabControl Grid.Row="3" Margin="0,0,0,10">
+            <TabControl x:Name="TabControlMain" Grid.Row="3" Margin="0,0,0,10">
                 <TabItem Header="Translation Preview">
                     <Grid>
                         <Grid.RowDefinitions>

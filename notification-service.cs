@@ -22,24 +22,12 @@ namespace ClipboardTranslator
 
         /// <summary>
         /// Show a notification popup when translation is completed
+        /// This method is kept but will not actually display anything as popup functionality is removed
         /// </summary>
         public static void ShowTranslationCompleted(string from, string to, bool showNotification)
         {
-            if (!showNotification || trayIcon == null)
-                return;
-
-            try
-            {
-                // Show tooltip with translation info
-                trayIcon.BalloonTipTitle = "Translation Completed";
-                trayIcon.BalloonTipText = $"From: {from}\nTo: {to}\nTranslated text copied to clipboard.";
-                trayIcon.BalloonTipIcon = ToolTipIcon.Info;
-                trayIcon.ShowBalloonTip(3000); // Show for 3 seconds
-            }
-            catch
-            {
-                // Ignore errors in showing notification
-            }
+            // This functionality is intentionally disabled
+            return;
         }
 
         /// <summary>

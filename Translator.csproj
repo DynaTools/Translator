@@ -93,12 +93,16 @@
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ai-parameter-handler.cs" />
     <Compile Include="ApiKeysWindow.xaml.cs">
       <DependentUpon>ApiKeysWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="interface-config-manager.cs" />
     <Compile Include="notification-service.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="clipboard-monitor.cs" />
+    <Compile Include="tone-comparison-handler.cs" />
+    <Compile Include="translation-handler.cs" />
     <Compile Include="translation-service-sound.cs" />
     <Compile Include="translation-service.cs" />
     <Compile Include="PreferencesWindow.xaml.cs">

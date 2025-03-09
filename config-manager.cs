@@ -30,7 +30,7 @@ namespace ClipboardTranslator
         public int MaxTokensLimit { get; set; } = 200; // Changed to 200 as requested
         public bool EnableTokenLimit { get; set; } = true;
         public bool MinimizeToTrayOnClose { get; set; } = true; // New setting to minimize instead of close
-        public bool ShowNotificationPopup { get; set; } = true; // New setting to show notification popup
+        public bool ShowNotificationPopup { get; set; } = false; // Notifications disabled
         public AIParameters AIParameters { get; set; } = new AIParameters();
     }
 
@@ -79,6 +79,9 @@ namespace ClipboardTranslator
                         {
                             settings.AIParameters = new AIParameters();
                         }
+
+                        // Disable popup notifications
+                        settings.ShowNotificationPopup = false;
                     }
 
                     // Return the read settings
@@ -106,6 +109,9 @@ namespace ClipboardTranslator
                 {
                     Directory.CreateDirectory(ConfigFolder);
                 }
+
+                // Always ensure popup notifications are disabled
+                settings.ShowNotificationPopup = false;
 
                 // Serialize and save settings
                 var options = new JsonSerializerOptions

@@ -30,7 +30,7 @@ namespace Translator
                 MaxTokensLimit = currentSettings.MaxTokensLimit,
                 EnableTokenLimit = currentSettings.EnableTokenLimit,
                 MinimizeToTrayOnClose = currentSettings.MinimizeToTrayOnClose,
-                ShowNotificationPopup = currentSettings.ShowNotificationPopup
+                ShowNotificationPopup = false // Always disabled since we're removing this feature
             };
 
             // Configure interface with current values
@@ -40,7 +40,6 @@ namespace Translator
             EnableTokenLimitCheckBox.IsChecked = UpdatedSettings.EnableTokenLimit;
             MaxTokensTextBox.Text = UpdatedSettings.MaxTokensLimit.ToString();
             MinimizeToTrayOnCloseCheckBox.IsChecked = UpdatedSettings.MinimizeToTrayOnClose;
-            ShowNotificationPopupCheckBox.IsChecked = UpdatedSettings.ShowNotificationPopup;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -51,7 +50,7 @@ namespace Translator
             UpdatedSettings.PlaySoundOnTranslation = PlaySoundCheckBox.IsChecked ?? false;
             UpdatedSettings.EnableTokenLimit = EnableTokenLimitCheckBox.IsChecked ?? true;
             UpdatedSettings.MinimizeToTrayOnClose = MinimizeToTrayOnCloseCheckBox.IsChecked ?? true;
-            UpdatedSettings.ShowNotificationPopup = ShowNotificationPopupCheckBox.IsChecked ?? true;
+            UpdatedSettings.ShowNotificationPopup = false; // Always disabled
 
             if (int.TryParse(MaxTokensTextBox.Text, out int maxTokens) && maxTokens > 0)
             {
