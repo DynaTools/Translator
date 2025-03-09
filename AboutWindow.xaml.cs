@@ -9,9 +9,9 @@ namespace Translator
         {
             InitializeComponent();
 
-            // Obter versão do assembly
+            // Get assembly version
             var version = Assembly.GetExecutingAssembly().GetName().Version;
-            VersionText.Text = $"Versão {version.Major}.{version.Minor}.{version.Build}";
+            VersionText.Text = $"Version {version.Major}.{version.Minor}.{version.Build}";
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -21,7 +21,7 @@ namespace Translator
 
         private void Hyperlink_Click(object sender, RoutedEventArgs e)
         {
-            // Abrir link no navegador
+            // Open link in browser
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "https://github.com/seuusuario/ClipboardTranslator",

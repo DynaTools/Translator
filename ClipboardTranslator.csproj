@@ -6,9 +6,9 @@
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>Resources\translate_icon.ico</ApplicationIcon>
-		<Authors>Seu Nome</Authors>
-		<Company>Seu Nome</Company>
-		<Description>Aplicativo para tradução automática do conteúdo da área de transferência</Description>
+		<Authors>Your Name</Authors>
+		<Company>Your Name</Company>
+		<Description>Automatic clipboard content translation application</Description>
 		<Version>1.0.0</Version>
 		<RootNamespace>ClipboardTranslator</RootNamespace>
 		<AssemblyName>Translator</AssemblyName>
@@ -44,7 +44,7 @@
 		<Reference Include="System.Web" />
 	</ItemGroup>
 
-	<!-- Adicione esta seção para configurar corretamente os arquivos XAML -->
+	<!-- Add this section to properly configure XAML files -->
 	<ItemGroup>
 		<Page Include="MainWindow.xaml" />
 		<Page Include="AboutWindow.xaml" />

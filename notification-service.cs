@@ -31,8 +31,8 @@ namespace ClipboardTranslator
             try
             {
                 // Show tooltip with translation info
-                trayIcon.BalloonTipTitle = "Tradução Concluída";
-                trayIcon.BalloonTipText = $"De: {from}\nPara: {to}\nTexto traduzido copiado para área de transferência.";
+                trayIcon.BalloonTipTitle = "Translation Completed";
+                trayIcon.BalloonTipText = $"From: {from}\nTo: {to}\nTranslated text copied to clipboard.";
                 trayIcon.BalloonTipIcon = ToolTipIcon.Info;
                 trayIcon.ShowBalloonTip(3000); // Show for 3 seconds
             }

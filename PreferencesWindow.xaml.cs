@@ -12,7 +12,7 @@ namespace Translator
         {
             InitializeComponent();
 
-            // Copiar configurações atuais
+            // Copy current settings
             UpdatedSettings = new TranslationSettings
             {
                 DefaultSourceLanguage = currentSettings.DefaultSourceLanguage,
@@ -33,7 +33,7 @@ namespace Translator
                 ShowNotificationPopup = currentSettings.ShowNotificationPopup
             };
 
-            // Configurar a interface com os valores atuais
+            // Configure interface with current values
             StartWithWindowsCheckBox.IsChecked = UpdatedSettings.StartWithWindows;
             StartMinimizedCheckBox.IsChecked = UpdatedSettings.StartMinimized;
             PlaySoundCheckBox.IsChecked = UpdatedSettings.PlaySoundOnTranslation;
@@ -45,7 +45,7 @@ namespace Translator
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Atualizar as configurações com base na interface
+            // Update settings based on interface
             UpdatedSettings.StartWithWindows = StartWithWindowsCheckBox.IsChecked ?? false;
             UpdatedSettings.StartMinimized = StartMinimizedCheckBox.IsChecked ?? false;
             UpdatedSettings.PlaySoundOnTranslation = PlaySoundCheckBox.IsChecked ?? false;
@@ -58,26 +58,26 @@ namespace Translator
                 UpdatedSettings.MaxTokensLimit = maxTokens;
             }
 
-            // Configurar inicialização com o Windows
+            // Configure Windows startup
             ConfigManager.SetStartWithWindows(UpdatedSettings.StartWithWindows);
 
-            // Definir resultado e fechar
+            // Set result and close
             DialogResult = true;
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            // Fechar sem salvar
+            // Close without saving
             DialogResult = false;
         }
 
         private void ResetStats_Click(object sender, RoutedEventArgs e)
         {
-            // Reiniciar estatísticas
+            // Reset statistics
             UpdatedSettings.TranslationsToday = 0;
             UpdatedSettings.LastTranslationDate = System.DateTime.Now;
 
-            MessageBox.Show("Estatísticas reiniciadas com sucesso!", "Estatísticas",
+            MessageBox.Show("Statistics reset successfully!", "Statistics",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
 

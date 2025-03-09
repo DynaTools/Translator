@@ -4,6 +4,15 @@ using System.Text.Json;
 
 namespace ClipboardTranslator
 {
+    public class AIParameters
+    {
+        public double Temperature { get; set; } = 0.7;
+        public double TopP { get; set; } = 0.95;
+        public double FrequencyPenalty { get; set; } = 0;
+        public double PresencePenalty { get; set; } = 0;
+        public string ModelVersion { get; set; } = "Default";
+    }
+
     public class TranslationSettings
     {
         public string DefaultSourceLanguage { get; set; } = "Auto Detect";
@@ -18,10 +27,11 @@ namespace ClipboardTranslator
         public bool PlaySoundOnTranslation { get; set; } = false;
         public int TranslationsToday { get; set; } = 0;
         public DateTime LastTranslationDate { get; set; } = DateTime.MinValue;
-        public int MaxTokensLimit { get; set; } = 200; // Alterado para 200 como solicitado
+        public int MaxTokensLimit { get; set; } = 200; // Changed to 200 as requested
         public bool EnableTokenLimit { get; set; } = true;
-        public bool MinimizeToTrayOnClose { get; set; } = true; // Nova configuração para minimizar em vez de fechar
-        public bool ShowNotificationPopup { get; set; } = true; // Nova configuração para mostrar pop-up de notificação
+        public bool MinimizeToTrayOnClose { get; set; } = true; // New setting to minimize instead of close
+        public bool ShowNotificationPopup { get; set; } = true; // New setting to show notification popup
+        public AIParameters AIParameters { get; set; } = new AIParameters();
     }
 
     public static class ConfigManager
@@ -62,6 +72,12 @@ namespace ClipboardTranslator
                         if (settings.MaxTokensLimit == 1000)
                         {
                             settings.MaxTokensLimit = 200;
+                        }
+
+                        // Initialize AI parameters if null
+                        if (settings.AIParameters == null)
+                        {
+                            settings.AIParameters = new AIParameters();
                         }
                     }
 

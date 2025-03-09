@@ -20,8 +20,8 @@
                     <CheckBox x:Name="StartWithWindowsCheckBox" Content="Start with Windows" Margin="0,5"/>
                     <CheckBox x:Name="StartMinimizedCheckBox" Content="Start minimized in tray" Margin="0,5"/>
                     <CheckBox x:Name="PlaySoundCheckBox" Content="Play sound when translation completes" Margin="0,5"/>
-                    <CheckBox x:Name="MinimizeToTrayOnCloseCheckBox" Content="Minimizar para a bandeja ao fechar" Margin="0,5"/>
-                    <CheckBox x:Name="ShowNotificationPopupCheckBox" Content="Mostrar notificação quando tradução for concluída" Margin="0,5"/>
+                    <CheckBox x:Name="MinimizeToTrayOnCloseCheckBox" Content="Minimize to tray when closing" Margin="0,5"/>
+                    <CheckBox x:Name="ShowNotificationPopupCheckBox" Content="Show notification when translation completes" Margin="0,5"/>
                 </StackPanel>
             </GroupBox>
 

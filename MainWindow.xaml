@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Translator"
         mc:Ignorable="d"
-        Title="Clipboard Translator" Height="400" Width="600" 
-        ResizeMode="CanMinimize"
+        Title="Clipboard Translator" Height="500" Width="700" 
+        ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen"
         Icon="/Resources/translate_icon.ico">
 
@@ -87,32 +87,161 @@
             </Grid>
 
             <!-- Tone Selection -->
-            <StackPanel Grid.Row="2" Margin="0,0,0,15">
-                <TextBlock Text="Translation Tone:" Margin="0,0,0,5"/>
-                <ComboBox x:Name="TranslationTone" SelectedIndex="0" SelectionChanged="ToneChanged">
-                    <ComboBoxItem Content="Neutral"/>
-                    <ComboBoxItem Content="Formal"/>
-                    <ComboBoxItem Content="Casual"/>
-                    <ComboBoxItem Content="Technical"/>
-                    <ComboBoxItem Content="Professional"/>
-                </ComboBox>
-            </StackPanel>
+            <Grid Grid.Row="2" Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- Translation Preview -->
-            <Border Grid.Row="3" BorderBrush="#DDD" BorderThickness="1" Padding="10" Background="#F9F9F9">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="Latest Translation Preview:" FontWeight="Bold" Margin="0,0,0,5"/>
-                    <TextBox Grid.Row="1" x:Name="TranslationPreview" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" 
-                             VerticalScrollBarVisibility="Auto"/>
-                </Grid>
-            </Border>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Translation Tone:" Margin="0,0,0,5"/>
+                    <ComboBox x:Name="TranslationTone" SelectedIndex="0" SelectionChanged="ToneChanged">
+                        <ComboBoxItem Content="Neutral"/>
+                        <ComboBoxItem Content="Formal"/>
+                        <ComboBoxItem Content="Casual"/>
+                        <ComboBoxItem Content="Technical"/>
+                        <ComboBoxItem Content="Professional"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <Button Grid.Column="1" Margin="10,25,0,0" Content="Show All Tones" Click="ShowAllTones_Click"/>
+            </Grid>
+
+            <!-- Translation Preview with Tabs for Multiple Features -->
+            <TabControl Grid.Row="3" Margin="0,0,0,10">
+                <TabItem Header="Translation Preview">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBox Grid.Row="0" x:Name="TranslationPreview" TextWrapping="Wrap" AcceptsReturn="True" 
+                                 VerticalScrollBarVisibility="Auto"/>
+
+                        <Button Grid.Row="1" Content="Apply Edits" HorizontalAlignment="Right" Margin="0,5,0,0" 
+                                Padding="10,3" Click="ApplyEdits_Click"/>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="All Tones">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Compare different tones for the same text" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <ScrollViewer Grid.Row="1">
+                            <StackPanel x:Name="AllTonesPanel">
+                                <!-- Content will be added programmatically -->
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="AI Parameters">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="AI Translation Parameters" Margin="0,5" FontWeight="Bold"/>
+
+                        <ScrollViewer Grid.Row="1">
+                            <StackPanel Margin="0,10">
+                                <!-- Temperature -->
+                                <TextBlock Text="Temperature:" Margin="0,5,0,0" ToolTip="Controls randomness (0.0-1.0)"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="TemperatureSlider" Minimum="0" Maximum="1" Value="0.7" 
+                                            TickFrequency="0.1" TickPlacement="BottomRight" 
+                                            ValueChanged="AIParameter_Changed"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=TemperatureSlider, Path=Value, StringFormat=N1}" 
+                                               Width="30" TextAlignment="Right" Margin="5,0,0,0"/>
+                                </Grid>
+
+                                <!-- Top P -->
+                                <TextBlock Text="Top P:" Margin="0,15,0,0" 
+                                           ToolTip="Controls diversity via nucleus sampling (0.0-1.0)"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="TopPSlider" Minimum="0" Maximum="1" Value="0.95" 
+                                            TickFrequency="0.1" TickPlacement="BottomRight"
+                                            ValueChanged="AIParameter_Changed"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=TopPSlider, Path=Value, StringFormat=N2}" 
+                                               Width="30" TextAlignment="Right" Margin="5,0,0,0"/>
+                                </Grid>
+
+                                <!-- Frequency Penalty -->
+                                <TextBlock Text="Frequency Penalty:" Margin="0,15,0,0" 
+                                           ToolTip="Penalizes frequently used tokens (0.0-2.0)"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="FrequencyPenaltySlider" Minimum="0" Maximum="2" Value="0" 
+                                            TickFrequency="0.2" TickPlacement="BottomRight"
+                                            ValueChanged="AIParameter_Changed"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=FrequencyPenaltySlider, Path=Value, StringFormat=N1}" 
+                                               Width="30" TextAlignment="Right" Margin="5,0,0,0"/>
+                                </Grid>
+
+                                <!-- Presence Penalty -->
+                                <TextBlock Text="Presence Penalty:" Margin="0,15,0,0" 
+                                           ToolTip="Penalizes new tokens based on presence in existing text (0.0-2.0)"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="PresencePenaltySlider" Minimum="0" Maximum="2" Value="0" 
+                                            TickFrequency="0.2" TickPlacement="BottomRight"
+                                            ValueChanged="AIParameter_Changed"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=PresencePenaltySlider, Path=Value, StringFormat=N1}" 
+                                               Width="30" TextAlignment="Right" Margin="5,0,0,0"/>
+                                </Grid>
+
+                                <!-- Provider Specific Parameters (OpenAI or Gemini) -->
+                                <GroupBox Header="Provider Specific Parameters" Margin="0,15,0,0" Padding="5">
+                                    <StackPanel>
+                                        <CheckBox x:Name="EnableModelVersionSelector" Content="Enable Model Version Selector" 
+                                                  Margin="0,5" Checked="AIParameter_Changed" Unchecked="AIParameter_Changed"/>
+                                        <ComboBox x:Name="ModelVersionSelector" Margin="0,5" IsEnabled="{Binding ElementName=EnableModelVersionSelector, Path=IsChecked}"
+                                                  SelectionChanged="AIParameter_Changed">
+                                            <ComboBoxItem Content="Default (Latest)"/>
+                                            <ComboBoxItem Content="GPT-3.5 Turbo"/>
+                                            <ComboBoxItem Content="GPT-4"/>
+                                            <ComboBoxItem Content="Gemini Pro"/>
+                                            <ComboBoxItem Content="Gemini Flash"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </GroupBox>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                            <Button Content="Reset to Defaults" Margin="0,0,10,0" Click="ResetAIParameters_Click"/>
+                            <Button Content="Test Parameters" Click="TestAIParameters_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+            </TabControl>
 
             <!-- Statistics -->
-            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,5,0,0">
                 <TextBlock Text="Translations today:"/>
                 <TextBlock x:Name="TranslationCount" Text="0" Margin="5,0,15,0" FontWeight="Bold"/>
                 <TextBlock Text="Last detected language:"/>
