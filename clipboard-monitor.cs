@@ -115,6 +115,20 @@ namespace ClipboardTranslator
             }
         }
 
+        public void SetMonitoringEnabled(bool enabled)
+        {
+            // Se estiver desabilitando, remova temporariamente o hook
+            if (!enabled && hwndSource != null)
+            {
+                hwndSource.RemoveHook(WndProc);
+            }
+            // Se estiver habilitando, adicione o hook novamente
+            else if (enabled && hwndSource != null)
+            {
+                hwndSource.AddHook(WndProc);
+            }
+        }
+
         public void Dispose()
         {
             if (hwndSource != null)

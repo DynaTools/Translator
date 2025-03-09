@@ -341,10 +341,7 @@ namespace ClipboardTranslator
                 // This is a basic implementation using a public API endpoint
 
                 // URL encode the text
-                string encodedText = HttpUtility.UrlEncode(text);
-
-                // For automatic detection, don't specify source language
-                string sourceParam = sourceLanguage == "auto" ? "" : $"&source={sourceLanguage}";
+                string encodedText = Uri.EscapeDataString(text);
 
                 // Build the request URL
                 string requestUrl = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sourceLanguage}&tl={targetLanguage}&dt=t&q={encodedText}";
@@ -356,58 +353,74 @@ namespace ClipboardTranslator
                 {
                     string jsonResponse = await response.Content.ReadAsStringAsync();
 
-                    // This API returns a nested array structure that's not standard JSON
-                    // We need to parse it manually
-
-                    // The response is like [[[translated,original,null,null]],null,"en"]
-                    // where the last element is the detected language
-
-                    // Remove starting and ending brackets
-                    jsonResponse = jsonResponse.TrimStart('[').TrimEnd(']');
-
-                    // Get first array which contains translations
-                    int firstArrayEnd = jsonResponse.IndexOf("],");
-                    if (firstArrayEnd > 0)
+                    // Tente usar uma abordagem mais robusta para analisar o JSON
+                    try
                     {
-                        string translationsJson = jsonResponse.Substring(0, firstArrayEnd + 1);
+                        // Tratamento simples: extrair a tradução do padrão conhecido
+                        // Normalmente o formato é [[[translated,original,null,null]],null,"en"]
 
-                        // Parse translations
-                        using (JsonDocument doc = JsonDocument.Parse("[" + translationsJson + "]"))
+                        // Buscar o primeiro segmento entre aspas após o início do texto "[[[\"
+                        int start = jsonResponse.IndexOf("[[[\"") + 4;
+                        if (start > 4) // Verifica se encontrou o padrão
                         {
-                            var translationParts = new List<string>();
-                            foreach (var item in doc.RootElement[0].EnumerateArray())
+                            int end = jsonResponse.IndexOf("\",", start);
+                            if (end > start)
                             {
-                                if (item.GetArrayLength() > 0)
+                                string translatedText = jsonResponse.Substring(start, end - start);
+
+                                // Decodificar sequências de escape
+                                translatedText = translatedText.Replace("\\\"", "\"").Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\t", "\t");
+
+                                // Tentar extrair o idioma detectado
+                                string detectedLang = "auto";
+                                int langStart = jsonResponse.LastIndexOf(",\"") + 2;
+                                if (langStart > 2)
                                 {
-                                    translationParts.Add(item[0].GetString());
+                                    int langEnd = jsonResponse.IndexOf("\"", langStart);
+                                    if (langEnd > langStart)
+                                    {
+                                        detectedLang = jsonResponse.Substring(langStart, langEnd - langStart);
+
+                                        // Map to language name if possible
+                                        if (languageNames.ContainsKey(detectedLang))
+                                        {
+                                            detectedLang = languageNames[detectedLang];
+                                        }
+                                    }
                                 }
+
+                                return new TranslationResult
+                                {
+                                    Success = true,
+                                    TranslatedText = translatedText,
+                                    DetectedLanguage = detectedLang
+                                };
                             }
+                        }
 
-                            string fullTranslation = string.Join(" ", translationParts);
-
-                            // Try to get detected language
-                            string detectedLang = "auto";
-
-                            // The last element in the response has the detected language
-                            int langIndex = jsonResponse.LastIndexOf(",\"");
-                            if (langIndex > 0)
+                        // Tentar uma abordagem alternativa se a primeira falhar
+                        var segments = System.Text.RegularExpressions.Regex.Matches(jsonResponse, @"\[\""(.*?)\"",");
+                        if (segments.Count > 0)
+                        {
+                            var translationBuilder = new StringBuilder();
+                            foreach (System.Text.RegularExpressions.Match match in segments)
                             {
-                                detectedLang = jsonResponse.Substring(langIndex + 2).Trim('"', ']');
-
-                                // Map to language name if possible
-                                if (languageNames.ContainsKey(detectedLang))
-                                {
-                                    detectedLang = languageNames[detectedLang];
-                                }
+                                string segment = match.Groups[1].Value;
+                                translationBuilder.Append(segment).Append(" ");
                             }
 
                             return new TranslationResult
                             {
                                 Success = true,
-                                TranslatedText = fullTranslation,
-                                DetectedLanguage = detectedLang
+                                TranslatedText = translationBuilder.ToString().Trim(),
+                                DetectedLanguage = "auto"
                             };
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Registrar erro específico de análise JSON
+                        System.Diagnostics.Debug.WriteLine($"JSON parsing error: {ex.Message}");
                     }
 
                     return new TranslationResult
