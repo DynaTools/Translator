@@ -73,7 +73,7 @@ namespace Translator
             // Open help page in browser with updated documentation URL
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "https://ai.google.dev/tutorials/ai-studio_quickstart",
+                FileName = "https://aistudio.google.com/app/apikey?_gl=1*1w3tfb6*_ga*MTAzNDQzMTU4Mi4xNzM5Mjk2NjEy*_ga_P1DBVKWT6V*MTc0MTU5MTExNy42LjEuMTc0MTU5MTEyNS4wLjAuMTA5NDE1ODU4NQ..",
                 UseShellExecute = true
             });
         }

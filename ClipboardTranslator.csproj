@@ -6,8 +6,8 @@
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>Resources\translate_icon.ico</ApplicationIcon>
-		<Authors>Your Name</Authors>
-		<Company>Your Name</Company>
+		<Authors>Paulo Giavoni</Authors>
+		<Company>Paulo Giavoni</Company>
 		<Description>Automatic clipboard content translation application</Description>
 		<Version>1.0.0</Version>
 		<RootNamespace>ClipboardTranslator</RootNamespace>
@@ -24,13 +24,13 @@
 
 	<ItemGroup>
 		<Content Include="Resources\translate_icon.ico">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
 
 	<ItemGroup>
 		<Resource Include="Resources\translate_icon.png">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Resource>
 	</ItemGroup>
 

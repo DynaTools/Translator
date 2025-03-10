@@ -1,52 +1,76 @@
 ﻿<Window x:Class="Translator.PreferencesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Preferences" Height="380" Width="400"
+        Title="Preferences" Height="400" Width="450"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
-        Icon="/Resources/translate_icon.ico">
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        Icon="/Resources/translate_icon.ico"
+        Background="{StaticResource BackgroundColor}">
+    <Border Margin="15" Background="{StaticResource CardBackgroundColor}" CornerRadius="10">
+        <Border.Effect>
+            <DropShadowEffect ShadowDepth="2" BlurRadius="15" Opacity="0.1" />
+        </Border.Effect>
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Clipboard Translator Preferences" 
-                   FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                <Rectangle Width="4" Height="24" Fill="{StaticResource PrimaryColor}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Clipboard Translator Preferences" 
+                        FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource PrimaryDarkColor}"/>
+            </StackPanel>
 
-        <StackPanel Grid.Row="1">
-            <GroupBox Header="Behavior" Margin="0,0,0,15" Padding="10">
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <CheckBox x:Name="StartWithWindowsCheckBox" Content="Start with Windows" Margin="0,5"/>
-                    <CheckBox x:Name="StartMinimizedCheckBox" Content="Start minimized in tray" Margin="0,5"/>
-                    <CheckBox x:Name="PlaySoundCheckBox" Content="Play sound when translation completes" Margin="0,5"/>
-                    <CheckBox x:Name="MinimizeToTrayOnCloseCheckBox" Content="Minimize to tray when closing" Margin="0,5"/>
-                </StackPanel>
-            </GroupBox>
+                    <GroupBox Header="Behavior">
+                        <StackPanel>
+                            <CheckBox x:Name="StartWithWindowsCheckBox" Content="Start with Windows" Margin="0,8"/>
+                            <CheckBox x:Name="StartMinimizedCheckBox" Content="Start minimized in tray" Margin="0,8"/>
+                            <CheckBox x:Name="PlaySoundCheckBox" Content="Play sound when translation completes" Margin="0,8"/>
+                            <CheckBox x:Name="MinimizeToTrayOnCloseCheckBox" Content="Minimize to tray when closing" Margin="0,8"/>
+                        </StackPanel>
+                    </GroupBox>
 
-            <GroupBox Header="Token Limit" Margin="0,0,0,15" Padding="10">
-                <StackPanel>
-                    <CheckBox x:Name="EnableTokenLimitCheckBox" Content="Limit tokens for translation" Margin="0,5"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Maximum token limit:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <TextBox x:Name="MaxTokensTextBox" Width="80" PreviewTextInput="NumberValidationTextBox"/>
-                    </StackPanel>
-                </StackPanel>
-            </GroupBox>
+                    <GroupBox Header="Token Limit" Margin="0,15,0,15">
+                        <StackPanel>
+                            <CheckBox x:Name="EnableTokenLimitCheckBox" Content="Limit tokens for translation" Margin="0,8"/>
+                            <Grid Margin="0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Maximum token limit:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Border Grid.Column="1" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="3" 
+                                        Width="100" HorizontalAlignment="Left">
+                                    <TextBox x:Name="MaxTokensTextBox" BorderThickness="0" 
+                                            PreviewTextInput="NumberValidationTextBox" Padding="5,3" TextAlignment="Right"/>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
 
-            <GroupBox Header="Statistics" Padding="10">
-                <StackPanel>
-                    <TextBlock>
-                        <Run Text="Reset counters"/>
-                        <Hyperlink Click="ResetStats_Click">Reset statistics</Hyperlink>
-                    </TextBlock>
+                    <GroupBox Header="Statistics">
+                        <Border Background="#F0F7FF" CornerRadius="5" Padding="10" Margin="0,8">
+                            <StackPanel>
+                                <TextBlock Margin="0,5">
+                                    <Run Text="Reset counters and statistics: "/>
+                                    <Hyperlink Click="ResetStats_Click" Foreground="{StaticResource PrimaryColor}">
+                                        <TextBlock Text="Reset statistics" FontWeight="SemiBold"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </GroupBox>
                 </StackPanel>
-            </GroupBox>
-        </StackPanel>
+            </ScrollViewer>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="Cancel" Width="80" Margin="0,0,10,0" Click="CancelButton_Click"/>
-            <Button Content="Save" Width="80" Click="SaveButton_Click"/>
-        </StackPanel>
-    </Grid>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                <Button Content="Cancel" Width="100" Margin="0,0,15,0" Click="CancelButton_Click" 
+                        Style="{StaticResource SecondaryButton}"/>
+                <Button Content="Save" Width="100" Click="SaveButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
 </Window>

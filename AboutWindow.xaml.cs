@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Windows;
+using System.Windows.Navigation;
 
 namespace Translator
 {
@@ -27,6 +28,17 @@ namespace Translator
                 FileName = "https://github.com/seuusuario/ClipboardTranslator",
                 UseShellExecute = true
             });
+        }
+
+        private void LinkedIn_Click(object sender, RequestNavigateEventArgs e)
+        {
+            // Open LinkedIn profile in browser
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = e.Uri.AbsoluteUri,
+                UseShellExecute = true
+            });
+            e.Handled = true;
         }
     }
 }
